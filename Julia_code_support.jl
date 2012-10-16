@@ -1,0 +1,171 @@
+function student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y,n,m_Y,k_0,mu_0,v_0,lambda_0,D,SS,suffs)
+         
+if n.==0
+    mu_n = mu_0
+    k_n = k_0
+    v_n = v_0
+    lambda_n = lambda_0
+    else
+    mu_n = k_0/(k_0+n)*mu_0 + n/(k_0+n)*m_Y
+    k_n = k_0+n
+    v_n = v_0+n
+
+    S = (SS - n*m_Y*m_Y')
+    zm_Y = m_Y-mu_0
+    lambda_n = lambda_0 + S  +  k_0*n/(k_0+n)*zm_Y*zm_Y'
+
+end
+
+Sigma = lambda_n*(k_n+1)/(k_n*(v_n-D+1))
+v = v_n-D+1
+mu = mu_n
+
+vd = v+D
+d2 = D/2
+
+log_det_Sigma = log(det(Sigma))
+inv_Sigma = inv(Sigma)
+
+lp = pc_gammaln_by_2[vd] - (pc_gammaln_by_2[v] + d2*pc_log[v] + d2*pc_log_pi) - .5*log_det_Sigma-(vd/2)*log(1+(1/v)*(y-mu)'*inv_Sigma*(y-mu))
+
+if suffs .== 1
+    return log_det_Sigma,inv_Sigma,lp
+else
+    return lp
+end
+
+end
+
+
+### p under prior alone
+
+function p_for_1(pcbt,pc_log,pc_log_pi,lambda_0,mu_0,k_0,v_0,D,N,datas,p_under_prior_alone)
+
+ Sigma = (lambda_0*(k_0+1)/(k_0*(v_0-D+1)))'
+    v = v_0-D+1
+    mu = mu_0
+    log_det_Sigma = log(det(Sigma))
+    inv_Sigma = Sigma^-1
+    vd = v+D
+    d2=D/2
+    for i=1:N
+        y = datas[:,i]
+              
+        lp = pcbt[vd] - (pcbt[v] + d2*pc_log[v] +  d2*pc_log_pi) -.5*log_det_Sigma- (vd/2)*log(1+(1/v)*(y-mu)'*inv_Sigma*(y-mu))
+        
+        p_under_prior_alone[i] = lp[1]
+
+    end
+
+    return p_under_prior_alone
+end
+
+## display time remaining
+
+function disptime(total_time,time_1_iter,iter,thin,num_iters,K_record)
+
+total_time = total_time + time_1_iter
+    if iter.==1
+       println(strcat("Iter: ",dec(iter),"/",dec(num_iters)))
+    elseif mod(iter,thin*5).==0
+        E_K_plus = mean(K_record[1:int(iter/thin)])
+        rem_time = (time_1_iter*.05 + 0.95*(total_time/iter))*num_iters-total_time
+        if rem_time < 0
+            rem_time = 0
+        end
+        println(strcat("Iter: ",dec(iter),'/',dec(num_iters),", Rem. Time: ", secs2hmsstr(rem_time),", mean[K^+]",string(E_K_plus)))
+    end
+
+    return(total_time)
+
+end
+
+# convert secs into dhminsec
+
+function secs2hmsstr(secs)
+
+days = ifloor(secs/(3600*24))
+rem = (secs-(days*3600*24))
+hours = ifloor(rem/3600)
+rem = rem -(hours*3600)
+minutes = ifloor(rem/60)
+rem = rem - minutes*60
+secs = ifloor(rem)
+
+    if days .== 0
+        str =  strcat(dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
+   elseif days .==1
+        str = strcat( "1 Day + ",dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
+    else
+        str = strcat( dec(days),"days:",dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
+end
+
+end
+
+
+# update alpha
+
+function update_alpha(alpha,N,K_plus,a_0,b_0)
+
+ g_alpha = randg(alpha+1)/2
+ g_N = randg(N)/2
+ nu = g_alpha/(g_alpha+g_N)
+ pis=(a_0+K_plus-1)/(a_0+K_plus-1+N*(b_0-log(nu)))
+ alpha = (pis*(randg(a_0+K_plus)/(b_0-log(nu))))+((1-pis)*(randg(a_0+K_plus-1)/(b_0-log(nu))))
+
+ end
+
+ # update prior
+
+ function update_prior(D,K_plus,means,sum_squares,counts,mu_0,v_0,k_0,lambda_0)
+
+     muu = zeros(Float64,(D,K_plus))
+     sums=0
+     invsig = zeros(Float64,(D,D,K_plus))
+     sumsig=0
+     for k =1:K_plus
+                
+         m_Y = means[:,k]
+         n=counts[k]
+         mu_n = k_0/(k_0+n)*mu_0 + n/(k_0+n)*m_Y
+         SS = (sum_squares[:,:,k] - n*(m_Y*m_Y'))
+         zm_Y = m_Y-mu_0
+         lambda_n = lambda_0 + SS + k_0*n/(k_0+n)*(zm_Y)*(zm_Y)'
+                
+         v_n=v_0+n
+
+         #simualte from wishard
+         for i = 1:v_n
+             A = chol(lambda_n)*randn(D)
+             invsig[:,:,k] += A*A'
+         end
+                
+         # simulate from mvnorm
+         A = chol(inv(invsig[:,:,k])/(k_0+n))
+         zs = randn(D)
+         
+         muu[:,k]=mu_n+A*zs              
+         #println( muu[:,k])
+         sums += invsig[:,:,k]*muu[:,k]
+         sumsig += invsig[:,:,k]
+     end
+            
+     meansig=inv(sumsig)
+     
+     A = chol(meansig./k_0)
+     zs = randn(D)
+     
+     mu_0=(meansig/sums')+A*zs    
+     # println( mu_0)
+     
+     sums=0
+     for k=1:K_plus
+         
+         sums += (muu[:,k]-mu_0)'*invsig[:,:,k]*(muu[:,k]-mu_0)
+     end
+     
+     k_0 = randg((K_plus+1)/2)*((1/(sums)+1)/2)[1]
+     #println(k_0)
+     return(k_0,mu_0)
+
+ end
