@@ -1,4 +1,4 @@
-function  DPM_sampler(num_iters,thin)
+function  DPM_sampler_fix(num_iters,thin)
 
 single_priors = dlmread("single_priors.csv",",",Float64)
 single_priors=single_priors[2:end,2]
@@ -9,10 +9,23 @@ matrix_priors=matrix_priors[2:end,2:end]
 datas =dlmread("datas.csv",",",Float64)
 global datas=datas[2:end,2:end]'
 
-    load("Julia_code_support.jl")
-    load("gibbs_crp.jl")
-    load("split-merge.jl")
+baseline =dlmread("baseline.csv",",",Float64)
+global baseline=baseline[2:end,2:end]'
 
+label = dlmread("labels.csv",",",Float64)
+label = label[2:end,2]
+label=int(label)
+
+    load("Julia_code_support.jl")
+    load("gibbs_crp_fix.jl")
+    load("split-merge_fix.jl")
+
+    uniqs=unique(label,true)
+    labels=Array(Int64,length(label))
+    for i=1:length(uniqs)
+        labels[label.==uniqs[i]]=i
+    end
+    
     a_0 = single_priors[1]
     b_0= single_priors[2]
 
@@ -32,49 +45,99 @@ global datas=datas[2:end,2:end]'
     max_class_id = N
 
     nit=int(num_iters/thin)
-
-    k_0s=zeros(Float64,nit)
-    K_plus = 1
-    class_id = zeros(Int16,(N,num_iters))
-    class_ids = zeros(Int16,(N,nit))
-    K_record = zeros(Int16,nit)
-    alpha_record = zeros(Float64,nit)
-    
-    # seat the first customer at the first table
-    class_id[1,1] = 1
-    
+    sources=max(labels)
+    k_0s=Array(Float64,nit)
+    K_plus = sources
+    class_id = Array(Int64,N)
+    class_ids = Array(Int64,(N,nit))
+    K_record = Array(Int64,nit)
+    K_mix_record = Array(Int64,nit)
+    alpha_record = Array(Float64,nit)
+    p_under_prior_alone = Array(Float64,N);
+      
     # precompute student-T posterior predictive distribution constants
     const pc_max_ind = 1e5
     const pc_gammaln_by_2 = lgamma((1:pc_max_ind)/2)
     const pc_log_pi = log(pi)
     const pc_log = log(1:pc_max_ind)
     
-    means = zeros(Float64,(D,max_class_id))
-    sum_squares = zeros(Float64,(D,D,max_class_id))
-    inv_cov = zeros(Float64,(D,D,max_class_id))
-    log_det_cov = zeros(Float64,(max_class_id))
-    counts = zeros(Int16,max_class_id,1)
-    counts[1] = 1
+    means = Array(Float64,(D,max_class_id))
+    orgmeans = Array(Float64,(D,max_class_id))
+    sum_squares = Array(Float64,(D,D,max_class_id))
+    orgsum_squares = Array(Float64,(D,D,max_class_id))
+    inv_cov = Array(Float64,(D,D,max_class_id))
+    log_det_cov = Array(Float64,(max_class_id))
+    counts = Array(Int64,max_class_id,1)
+    allcounts = Array(Int64,max_class_id,1)
+    ns = Array(Int64,max_class_id);
+    is=unique(labels,true);
+    yyT = Array(Float64,(D,D,N))
+    orginv_cov=Array(Float64,(D,D,sources))
+    orglog_det_cov=Array(Float64,(D,D,sources))
+
+    for i=1:sources
     
-    p_under_prior_alone = zeros(Float64,N);
+        means[:,i] = mean(baseline[:,labels.==is[i]],2)
+        orgmeans[:,i] =  means[:,i]
+        allcounts[i] = size(baseline[:,labels.==is[i]],2)
+        ns[i] = size(baseline[:,labels.==is[i]],2)
+        orgsum_squares[:,:,i] = (baseline[:,labels.==is[i]]-repmat(mean(baseline[:,labels.==is[i]],2),1,allcounts[i]))*(baseline[:,labels.==is[i]]-repmat(mean(baseline[:,labels.==is[i]],2),1,allcounts[i]))'
+        sum_squares[:,:,i] =  orgsum_squares[:,:,i]
     
-    # sit first individual at first table
-    y = datas[:,1]
-    yyT = y*y'
+        orgsum_squares[:,:,i] = orgsum_squares[:,:,i]+ns[i]*(means[:,i]*means[:,i]');
+        sum_squares[:,:,i] = sum_squares[:,:,i]+ns[i]*(means[:,i]*means[:,i]');
     
-    (ldc,ic) = student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y,1,y,k_0,mu_0,v_0,lambda_0,D,yyT,1)
+        n = size(baseline[:,labels.==is[i]],2)
+        k_n = k_0+n
+        v_n = v_0+n
     
-    means[:,1] = y
-    sum_squares[:,:,1] = yyT
-    counts[1] = 1
-    log_det_cov[1] = ldc
-    inv_cov[:,:,1] = ic
+        zm_Y = means[:,i]-mu_0
+        SS = sum_squares[:,:,i]-n*(means[:,i]*means[:,i]')
+        lambda_n = lambda_0 + SS +  k_0*n/(k_0+n)*(zm_Y)*(zm_Y)'
+        Sigma = lambda_n*(k_n+1)/(k_n*(v_n-D+1))
     
-    yyT = zeros(Float64,(D,D,N))
-    
-    for i=1:N
-        yyT[:,:,i]=datas[:,i]*datas[:,i]'
+        log_det_cov[i] = log(det(Sigma))
+        orglog_det_cov[i] =  log_det_cov[i]
+        inv_cov[:,:,i] = inv(Sigma)
+        orginv_cov[:,:,i] =  inv_cov[:,:,i]
     end
+    
+    dists=Array(Float64,sources)
+    for i=1:N
+        
+        y = datas[:,i]
+    
+        for j=1:length(uniqs)
+            dists[j] =  sqrt(sum((y-orgmeans[:,j]).^2));
+        end
+    
+        choose=find(rand().>=(1-cumsum(dists./sum(dists))))[1]
+        allcounts[choose]=allcounts[choose]+1
+        counts[choose]=counts[choose]+1
+        class_id[i]=choose;
+        
+        n = allcounts[choose]
+        yyT[:,:,i] = y*y';
+        
+        means[:,choose] = means[:,choose] + (1/n)*(y-means[:,choose]);
+        sum_squares[:,:,choose] = sum_squares[:,:,choose] + yyT[:,:,i];
+        
+        
+        k_n = k_0+n;
+        v_n = v_0+n;
+        
+        zm_Y = means[:,choose]-mu_0
+        SS = sum_squares[:,:,choose]-n*(means[:,choose]*means[:,choose]')
+        lambda_n = lambda_0 + SS + k_0*n/(k_0+n)*(zm_Y)*(zm_Y)'
+        Sigma = lambda_n*(k_n+1)/(k_n*(v_n-D+1))
+    
+        log_det_cov[choose] = log(det(Sigma))
+        inv_cov[:,:,choose] = inv(Sigma)
+    
+    end
+
+    K_plus = max(class_id);
+d2 = D/2;
     
     tic()
     totaltime=0
