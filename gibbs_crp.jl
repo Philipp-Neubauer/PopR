@@ -1,7 +1,7 @@
-function crp_gibbs(datas,iter,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,N,k_0,mu_0,v_0,lambda_0,D,sum_squares,yyT,means,inv_cov,log_det_cov,counts,K_plus,alpha, p_under_prior_alone)
+function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
 
     # take this out later !!!!
-    #class_ids=class_id[:,iter]
+    #class_idd=class_id
 
     for i=1:N
     
@@ -12,121 +12,66 @@ function crp_gibbs(datas,iter,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_
         y = datas[:,i]
        
         old_class_ids= class_idd[i]
-       
+
+        # temporary variables
+        tempStats = deepcopy(Stats);
+        class_idd_temp = class_idd-0
+        K_plus_temp = K_plus-0
+        tempcounts = counts-0          
+        dels=false
+        
         if old_class_ids != 0
-            counts[old_class_ids] = counts[old_class_ids] -1
-
-            old_class_log_det_Sigma = log_det_cov[old_class_ids]
-            old_class_inv_Sigma = inv_cov[:,:,old_class_ids]
             
-            if counts[old_class_ids].==0
+            tempcounts[old_class_ids] = tempcounts[old_class_ids] -1
+                       
+            if tempcounts[old_class_ids].==0
+                dels = true
                 # delete class compact all data structures
+                               
+                hits = class_idd_temp.>=old_class_ids
+                class_idd_temp[hits] = class_idd_temp[hits]-1
+                K_plus_temp = K_plus-1
                 
-                hits = class_idd.>=old_class_ids;
-                class_idd[hits] = class_idd[hits]-1;
-                K_plus = K_plus-1;
+                hits = [1:old_class_ids-1, old_class_ids+1:(K_plus_temp+1)]
+                tempcounts[1:K_plus_temp] = tempcounts[hits];
+                tempcounts[K_plus_temp+1] = 0;           
+                old_class_ids=K_plus_temp+1
                 
-                hits = [1:old_class_ids-1, old_class_ids+1:(K_plus+1)]
-
-                #if !isempty(hits)
-                means[:,1:K_plus] = means[:,hits];
-                means[:,K_plus+1] = 0;
-                sum_squares[:,:,1:K_plus] = sum_squares[:,:,hits];
-                sum_squares[:,:,1+K_plus] = 0;
-                counts[1:K_plus] = counts[hits];
-                counts[K_plus+1] = 0;
-                
-                log_det_cov[1:K_plus] = log_det_cov[hits];
-                log_det_cov[K_plus+1] = 0;
-                inv_cov[:,:,1:K_plus] = inv_cov[:,:,hits];
-                inv_cov[:,:,K_plus+1] = 0;
-                # end
-                
+                tempStats[1:K_plus_temp] =  tempStats[hits]
+                tempStats[K_plus_temp+1] =  0
+                                             
             else
-                means[:,old_class_ids] = (1/(counts[old_class_ids]))*((counts[old_class_ids]+1)*means[:,old_class_ids] - y);
-                sum_squares[:,:,old_class_ids] = sum_squares[:,:,old_class_ids] - yyT[:,:,i];
+                
+                tempStats[old_class_ids]=update_Stats(tempStats[old_class_ids],y,tempcounts[old_class_ids],-1)
+                
             end
         end
         
-        # complete the CRP prior with new source prob.
+        # prior with new source prob.
         if iter != 1
-            prior = [counts[1:K_plus]; alpha]/(N-1+alpha)
+            prior = [tempcounts[1:K_plus_temp]; alpha]/(N-1+alpha)
         else
-            prior = [counts[1:K_plus]; alpha]/(i-1+alpha)
+            prior = [tempcounts[1:K_plus_temp]; alpha]/(i-1+alpha)
         end
         
         likelihood = zeros(Float64,(length(prior),1))
               
-        # as per Radford's Alg. 3 compute the posterior predictive
-        # probabilities in two scenerios, 1) we will evaluate the
-        # likelihood of sitting at all of the existing sources by computing
-        # the probability of the datapoint under the posterior predictive
-        # distribution with all points sitting at that source considered and
-        # 2) we will compute the likelihood of the point under the
-        # posterior predictive distribution with no observations
-        
-        for ell = 1:K_plus
-            # get the class ids of the points sitting at source l
-            
-            n = counts[ell]
-            
-            m_Y = means[:,ell]
-            mu_n = k_0/(k_0+n)*mu_0 + n/(k_0+n)*m_Y
-            k_n = k_0+n
-            v_n = v_0+n
-            
-            # set up variables for Gelman's formulation of the Student T
-            # distribution
-            v = v_n-D+1
-            mu = mu_n
-            
-            
-            # if old_class_ids == ell means that this point used to sit at
-            # source ell, all of the sufficient statistics have been updated
-            # in sum_squares, counts, and means but that means that we have
-            # to recompute log_det_Sigma and inv_Sigma.  if we reseat the
-            # particle at its old source then we can put the old
-            # log_det_Sigma and inv_Sigma back, otherwise we need to update
-            # both the old source and the new source
-            if old_class_ids != 0
-            
-                if old_class_ids .== ell
-                    S = (sum_squares[:,:,ell] - n*(m_Y*m_Y'))
-                    zm_Y = m_Y-mu_0
-                    lambda_n = lambda_0 + S  + k_0*n/(k_0+n)*(zm_Y)*(zm_Y)'
-                    Sigma = (lambda_n*(k_n+1)/(k_n*(v_n-D+1)))'
-                                       
-                    log_det_Sigma = log(det(Sigma))
-                    inv_Sigma = (Sigma)^-1
-                    log_det_cov[old_class_ids] = log_det_Sigma
-                    inv_cov[:,:,old_class_ids] = inv_Sigma
-                else
-                    log_det_Sigma = log_det_cov[ell]
-                    inv_Sigma = inv_cov[:,:,ell];
-                end
-            else
-                # this case is the first sweep through the data
-                S = (sum_squares[:,:,ell] - n*(m_Y*m_Y'))
-                zm_Y = m_Y-mu_0
-                lambda_n = lambda_0 + S  +  k_0*n/(k_0+n)*(zm_Y)*(zm_Y)'
-                Sigma = (lambda_n*(k_n+1)/(k_n*(v_n-D+1)))';
+        for ell = 1:K_plus_temp
+           
+            if old_class_ids.== ell || old_class_ids.== 0
+                (tempStats[ell],likelihood[ell]) = getlik(consts,priors,tempStats[ell],y,tempcounts[ell],true,true)
                 
-                log_det_Sigma = log(det(Sigma));
-                inv_Sigma = (Sigma)^-1;
-                log_det_cov[ell] = log_det_Sigma;
-                inv_cov[:,:,ell] = inv_Sigma;
+            else
+                likelihood[ell] = getlik(consts,priors,tempStats[ell],y,tempcounts[ell],true,false)
             end
-            
-            vd = v+D;
-            d2 = D/2
-            # the log likelihood for class ell
-            likelihood[ell] = (pc_gammaln_by_2[vd] - (pc_gammaln_by_2[v] + d2*pc_log[v] + d2*pc_log_pi) - .5*log_det_Sigma- (vd/2)*log(1+(1/v)*(y-mu)'*inv_Sigma*(y-mu)))[1]
-            
+                     
+        
         end
         
-        likelihood[K_plus+1] = p_under_prior_alone[i];
+        likelihood[K_plus_temp+1] = p_under_prior_alone[i]
         
-        likelihood = exp(likelihood-max(likelihood));
+        likelihood = exp(likelihood-max(likelihood))
+
         likelihood = likelihood/sum(likelihood);
         
         # compute the posterior over seating assignment for datum i
@@ -140,45 +85,32 @@ function crp_gibbs(datas,iter,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_
         
         new_class_ids = find(cdf.>rn)[1]
         
-        counts[new_class_ids] = counts[new_class_ids]+1;
-        means[:,new_class_ids] = means[:,new_class_ids]+ (1/counts[new_class_ids])*(y-means[:,new_class_ids]);
-        sum_squares[:,:,new_class_ids] = sum_squares[:,:,new_class_ids] + yyT[:,:,i];
-        
-        if new_class_ids .== (K_plus+1)
-           K_plus = K_plus+1;
+        tempcounts[new_class_ids] = tempcounts[new_class_ids]+1
+        newc=false
+        if new_class_ids .== (K_plus_temp+1)
+        newc=true
+           K_plus_temp = K_plus_temp+1;
         end
-        
-        if old_class_ids .== new_class_ids
-            # we don't need to compute anything new as the point was
-            # already sitting at that source and the matrix inverse won't
-            # change
-            log_det_cov[old_class_ids] = old_class_log_det_Sigma;
-            inv_cov[:,:,old_class_ids] = old_class_inv_Sigma;
-        else
-            # the point changed sources which means that the matrix inverse
-            # sitting in the old_class_ids slot is appropriate but that the
-            # new source matrix inverse needs to be updated
-            n = counts[new_class_ids];
-            #             if n~=0
-            m_Y = means[:,new_class_ids];
-            k_n = k_0+n;
-            v_n = v_0+n;
+
+        # update things either the new class id is != the old class without any re-arrangements, or it's uneuqal to K_plus+1 with re-arragement -- else we can jsut keep everything as is...
+        if (old_class_ids .!= new_class_ids && dels==false)||(newc==false && dels==true)
+
+            # record the new source and update variables to values of temporary variables
+            class_idd_temp[i] = new_class_ids
+            class_idd =class_idd_temp-0
+            K_plus = K_plus_temp-0
+            counts = tempcounts-0
             
-            # set up variables for Gelman's formulation of the Student T
-            # distribution
-            S = (sum_squares[:,:,new_class_ids] - n*(m_Y*m_Y'));
-            zm_Y = m_Y-mu_0;
-            lambda_n = lambda_0 + S  + k_0*n/(k_0+n)*(zm_Y)*(zm_Y)';
-            Sigma = (lambda_n*(k_n+1)/(k_n*(v_n-D+1)))';
-            
-            log_det_cov[new_class_ids] = log(det(Sigma));
-            inv_cov[:,:,new_class_ids] = Sigma^-1;
+            tempStats[new_class_ids]=update_Stats(tempStats[new_class_ids],y,counts[new_class_ids],1)
+
+                    
+            tempStats[new_class_ids] = getlik(consts,priors,tempStats[new_class_ids],y,counts[new_class_ids],false,true)
+                  
+            Stats = deepcopy(tempStats) 
         end
-        
-        # record the new source
-        class_idd[i] = new_class_ids;
-        
+    
     end
-    return(class_idd,K_plus,sum_squares,means,inv_cov,log_det_cov,counts)
+    
+    return(class_idd,K_plus,Stats,counts)
     
     end

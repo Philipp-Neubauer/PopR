@@ -1,6 +1,6 @@
-function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,N,k_0,mu_0,v_0,lambda_0,D,sum_squares,yyT,means,inv_cov,log_det_cov,counts,K_plus,alpha,p_under_prior_alone)
+function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
 
-        classids_temp = copy(class_idd)
+        classids_temp = deepcopy(class_idd)
         # choose individuals at random
         ind = randi(N,2)
         c_i = classids_temp[ind[1]]
@@ -21,16 +21,10 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
             # (RANDOM SAMPLE THE ORDER! [Dahl 2003]]
             n_S=ones(Int16,2,1) # keeps track of the number of items at each 'new-old' component
            
-            meens = zeros(Float64,D,2)
-            meens[:,1] = datas[:,ind[1]]
-            meens[:,2] = datas[:,ind[2]]
+            sstats = NORM(zeros(Float64,D,2),zeros(Float64,D,D,2),zeros(Float64,D,D,2),zeros(Float64,2))
+                      
+            cstats = NORM( zeros(Float64,D,1),zeros(Float64,D,D),zeros(Float64,D,D),zeros(Float64,1))
 
-            sum_s = zeros(Float64,D,D,2)
-            sum_s[:,:,1] = yyT[:,:,ind[1]]
-            sum_s[:,:,2] = yyT[:,:,ind[2]]
-            
-            cmeans = zeros(Float64,D,1)
-            csums = zeros(Float64,D,D)
             cns = 0
             clik=0;cprod=1;setlik=0;likelihood=zeros(Float64,(1,2))
             prob_i=zeros(Float64,(2,1))
@@ -54,25 +48,25 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
                 
                 y_k = datas[:,k]
 
-                clikelihood = student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y_k,cns,cmeans,k_0,mu_0,v_0,lambda_0,D,csums,0)
+                cstats,clikelihood = getlik(consts,priors,cstats,y_k,cns,true,true)
                 
                 clik=clik+clikelihood
                 cns=cns+1
-                cmeans = cmeans + (1/cns)*(y_k-cmeans)
-                csums = csums + yyT[:,:,k]
-                
+
+                cstats = update_Stats(cstats,y_k,cns,1)
+                             
                 # calculate individual set likelihoods
                 
                 if o.==1 || o.==2
                     
                     setlik=setlik+p_under_prior_alone[ind[o]]
-                    
+                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
                     continue
                 end
   
                 for ell = 1:2
 
-                    likelihood[ell] = student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y_k,n_S[ell],meens[:,ell],k_0,mu_0,v_0,lambda_0,D,sum_s[:,:,ell],0)[1]
+                    sstats[ell],likelihood[ell] = getlik(consts,priors,sstats[ell],y_k,n_S[ell],true,true)
                                     
                 end
                 
@@ -85,56 +79,35 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
                 cprod=cprod*prob_i[classhelp[o]]
                 
                 n_S[classhelp[o]] = n_S[classhelp[o]]+1
-                
-                meens[:,classhelp[o]] = meens[:,classhelp[o]]+ (1/n_S[classhelp[o]])*(y_k-meens[:,classhelp[o]])
-                sum_s[:,:,classhelp[o]] = sum_s[:,:,classhelp[o]] + yyT[:,:,k]
-                               
+
+                sstats[classhelp[o]] = update_Stats(sstats[classhelp[o]],y_k,n_S[classhelp[o]],1)
+                                              
             end
             
             M_H_prior = exp(lgamma(n_j+n_i)-(lgamma(n_S[1])+lgamma(n_S[2])))/alpha
             M_H_Lik =exp(clik-setlik)
             M_H_rat = M_H_prior*(M_H_Lik)*cprod
             
-            if rand().<M_H_rat[1] # accept ?
+            if rand().<M_H_rat # accept ?
                 #println("accept merge")
                 # first update suff-stats of new merged group
                 
                 counts[c_j] = n_i + n_j
-                means[:,c_j] = (mean(datas[:,class_idd.==c_j],2)*n_j+n_i*mean(datas[:,class_idd.==c_i],2))/(n_i+n_j)
-                sum_squares[:,:,c_j] = sum_squares[:,:,c_j] + sum_squares[:,:,c_i]
-                
-                # update relevant quantities for student -t for c_j
-                
-                m_Y = means[:,c_j]
-                n=counts[c_j]
-                k_n = k_0+n
-                v_n = v_0+n
-                
-                S = (sum_squares[:,:,c_j] - n*(m_Y*m_Y'))
-                zm_Y = m_Y-mu_0
-                lambda_n = lambda_0 + S  + k_0*n/(k_0+n)*zm_Y*zm_Y'
-                Sigma = (lambda_n*(k_n+1)/(k_n*(v_n-D+1)))'
-                
-                log_det_cov[c_j] = log(det(Sigma))
-                inv_cov[:,:,c_j] = Sigma^-1
-                
+               
+                Stats[c_j] = getlik(consts,priors,cstats,0,counts[c_j],false,true)
+        
                 # then delete old table
                 
                 class_idd=classids_temp
                 K_plus = K_plus-1
                 
                 hits = [1:c_i-1, c_i+1:(K_plus+1)]
-                means[:,1:K_plus] = means[:,hits]
-                means[:,K_plus+1] = 0
-                sum_squares[:,:,1:K_plus] = sum_squares[:,:,hits]
-                sum_squares[:,:,1+K_plus] = 0
+                
                 counts[1:K_plus] = counts[hits]
                 counts[K_plus+1] = 0
                 
-                log_det_cov[1:K_plus] = log_det_cov[hits]
-                log_det_cov[K_plus+1] = 0
-                inv_cov[:,:,1:K_plus] = inv_cov[:,:,hits]
-                inv_cov[:,:,K_plus+1] = 0
+                Stats[1:K_plus] =  Stats[hits]
+                Stats[K_plus+1] =  0
                 
             end
             
@@ -146,13 +119,9 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
             # [RANDOM SAMPLE THE ORDER! [Dahl 2003]]
             n_S=ones(Int16,2,1) # keeps track of the number of items at each 'new-old' component
            
-            meens = zeros(Float64,D,2)
-            meens[:,1] = datas[:,ind[1]]
-            meens[:,2] = datas[:,ind[2]]
-
-            sum_s = zeros(Float64,D,D,2)
-            sum_s[:,:,1] = yyT[:,:,ind[1]]
-            sum_s[:,:,2] = yyT[:,:,ind[2]]
+            sstats = NORM(zeros(Float64,D,2),zeros(Float64,D,D,2),zeros(Float64,D,D,2),zeros(Float64,2))
+                      
+            cstats = NORM( zeros(Float64,D,1),zeros(Float64,D,D),zeros(Float64,D,D),zeros(Float64,1))
             
             cmeans = zeros(Float64,(D,1))
             csums = zeros(Float64,(D,D))
@@ -174,25 +143,25 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
                 # calculate the combined likelihood
                 y_k = datas[:,k]
                 
-                clikelihood = student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y_k,cns,cmeans,k_0,mu_0,v_0,lambda_0,D,csums,0)
+                cstats,clikelihood = getlik(consts,priors,cstats,y_k,cns,true,true)
                 
                 clik=clik+(clikelihood)
                 cns=cns+1
-                cmeans = cmeans + (1/cns)*(y_k-cmeans)
-                csums = csums + yyT[:,:,k]
+
+                cstats = update_Stats(cstats,y_k,cns,1)
                 
                 # calculate individual set likelihoods
                 
                 if o.==1 || o.==2
                     
                     setlik=setlik+p_under_prior_alone[ind[o]]
-                    
+                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
                     continue
                 end
                 
                 for ell = 1:2
 
-                    likelihood[ell] = student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y_k,n_S[ell],meens[:,ell],k_0,mu_0,v_0,lambda_0,D,sum_s[:,:,ell],0)[1]
+                    sstats[ell],likelihood[ell] = getlik(consts,priors,sstats[ell],y_k,n_S[ell],true,true)
                                     
                 end
                 
@@ -200,16 +169,14 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
                 prob_i[1] = (n_S[1]*likelihoods[1])/sum(n_S'.*likelihoods) # the proba of choosing S_i for individual k
                 prob_i[2] = 1-prob_i[1]
                 
-                if rand().<prob_i[1] # S_i is chosen, this time I need to keep track of which one k was allocated to
-                    
+                if rand().<prob_i[1] # S_i is chosen, this time I need to keep track of which one k was allocated to                    
                     setlik=setlik+likelihood[1]
                     cprod=cprod*prob_i[1]
                     
                     classids_temp[k]=K_plus+1
                     n_S[1] = n_S[1]+1
                     
-                    meens[:,1] = meens[:,1]+ (1/n_S[1])*(y_k-meens[:,1])
-                    sum_s[:,:,1] = sum_s[:,:,1] + yyT[:,:,k]
+                    sstats[1] = update_Stats(sstats[1],y_k,n_S[1],1)
                     
                 else # S_j is chosen
                     
@@ -218,8 +185,7 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
                     
                     n_S[2] = n_S[2]+1
                     
-                    meens[:,2] = meens[:,2]+ (1/n_S[2])*(y_k-meens[:,2])
-                    sum_s[:,:,2] = sum_s[:,:,2] + yyT[:,:,k]
+                    sstats[2] = update_Stats(sstats[2],y_k,n_S[2],1)
                     
                 end
                 
@@ -229,44 +195,14 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
             M_H_Lik = exp(setlik-clik)
             M_H_rat = M_H_prior*(M_H_Lik)*(1/cprod)
             
-            if rand().<M_H_rat[1] #&& any(classids_temp!=class_idd) # accept ?
+            if rand().<M_H_rat #&& any(classids_temp!=class_idd) # accept ?
                 # println("accept split")
                 # first update suff-stats of new groups
                 counts[c_j] = n_S[2]
                 counts[K_plus+1] = n_S[1]
-                means[:,c_j] = mean(datas[:,classids_temp.==c_j],2)
-                means[:,K_plus+1] = mean(datas[:,classids_temp.==(K_plus+1)],2)
-                
-                sum_squares[:,:,K_plus+1] = reshape(sum(yyT[:,:,classids_temp.==(K_plus+1)],3),D,D)
-                sum_squares[:,:,c_j] = sum_squares[:,:,c_j] - sum_squares[:,:,K_plus+1]
-                
-                # update relevant quantities for student -t for c_j and c_i
-                
-                m_Y = means[:,c_j]
-                n=counts[c_j]
-                k_n = k_0+n
-                v_n = v_0+n
-                
-                S = (sum_squares[:,:,c_j] - n*(m_Y*m_Y'))
-                zm_Y = m_Y-mu_0
-                lambda_n = lambda_0 + S  +  k_0*n/(k_0+n)*(zm_Y*zm_Y')
-                Sigma = (lambda_n*(k_n+1)/(k_n*(v_n-D+1)))'
-                
-                log_det_cov[c_j] = log(det(Sigma))
-                inv_cov[:,:,c_j] = Sigma^-1
-                
-                m_Y = means[:,K_plus+1]
-                n=counts[K_plus+1]
-                k_n = k_0+n
-                v_n = v_0+n
-                
-                S = (sum_squares[:,:,K_plus+1] - n*(m_Y*m_Y'))
-                zm_Y = m_Y-mu_0
-                lambda_n = lambda_0 + S  +  k_0*n/(k_0+n)*zm_Y*zm_Y'
-                Sigma = (lambda_n*(k_n+1)/(k_n*(v_n-D+1)))'
-                
-                log_det_cov[K_plus+1] = log(det(Sigma))
-                inv_cov[:,:,K_plus+1] = Sigma^-1
+
+                Stats[c_j] = getlik(consts,priors,sstats[2],0,counts[c_j],false,true)
+                Stats[K_plus+1] = getlik(consts,priors,sstats[1],0,counts[K_plus+1],false,true)
                 
                 K_plus=K_plus+1
                 class_idd=copy(classids_temp)
@@ -274,6 +210,6 @@ function split_merge(data,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,
             
         end
 
-       return(class_idd,K_plus,sum_squares,means,inv_cov,log_det_cov,counts)
+       return(class_idd,K_plus,Stats,counts)
         
 end

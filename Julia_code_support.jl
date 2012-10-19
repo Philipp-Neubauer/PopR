@@ -1,57 +1,81 @@
-function student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y,n,m_Y,k_0,mu_0,v_0,lambda_0,D,SS,suffs)
-         
-if n.==0
-    mu_n = mu_0
-    k_n = k_0
-    v_n = v_0
-    lambda_n = lambda_0
+#unique
+
+function unique{T}(A::AbstractArray{T}, sorted::Bool)
+    dd = Dict{T, Bool}()
+    for a in A dd[a] = true end
+    sorted? sort!(keys(dd)): keys(dd)
+end
+
+# update statistics Normal case
+
+function update_Stats(Stats::NORM,y,counts,m)
+
+    if m<0
+        Stats.means = (1/counts)*((counts+1)*Stats.means- y);
+        Stats.sum_squares = Stats.sum_squares - y*y'
     else
-    mu_n = k_0/(k_0+n)*mu_0 + n/(k_0+n)*m_Y
-    k_n = k_0+n
-    v_n = v_0+n
-
-    S = (SS - n*m_Y*m_Y')
-    zm_Y = m_Y-mu_0
-    lambda_n = lambda_0 + S  +  k_0*n/(k_0+n)*zm_Y*zm_Y'
-
+        Stats.means=  Stats.means+ (1/counts)*(y- Stats.means);
+        Stats.sum_squares =  Stats.sum_squares + y*y'
+    end
+    return Stats
 end
 
-Sigma = lambda_n*(k_n+1)/(k_n*(v_n-D+1))
-v = v_n-D+1
-mu = mu_n
 
-vd = v+D
-d2 = D/2
+# student log lik
+function getlik(consts::STUD,priors::MNIW,Stats::NORM,y,n,lik::Bool,suffs::Bool)
+         
+    m_Y = Stats.means
+    mu = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*m_Y
+    k_n = priors.k_0+n
+    v_n = priors.v_0+n
 
-log_det_Sigma = log(det(Sigma))
-inv_Sigma = inv(Sigma)
+    S = (Stats.sum_squares - n*m_Y*m_Y')
+    zm_Y = m_Y-priors.mu_0
+    lambda_n = priors.lambda_0 + S  +  priors.k_0*n/(priors.k_0+n)*zm_Y*zm_Y'
 
-lp = pc_gammaln_by_2[vd] - (pc_gammaln_by_2[v] + d2*pc_log[v] + d2*pc_log_pi) - .5*log_det_Sigma-(vd/2)*log(1+(1/v)*(y-mu)'*inv_Sigma*(y-mu))
+    Sigma = lambda_n*(k_n+1)/(k_n*(v_n-consts.D+1))
+    v = v_n-consts.D+1
+   
+    vd = v+consts.D
+    d2 = consts.D/2
 
-if suffs .== 1
-    return log_det_Sigma,inv_Sigma,lp
-else
-    return lp
-end
+    if suffs
 
+        Stats.log_det_cov =  log(det(Sigma))
+        Stats.inv_cov  = inv(Sigma)
+
+        if lik
+        
+            lp = (consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - .5*Stats.log_det_cov-(vd/2)*log(1+(1/v)*(y-mu)'*Stats.inv_cov*(y-mu)))[1]
+
+            return Stats,lp
+        else
+            return Stats
+        end
+    else
+        lp = (consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - .5*Stats.log_det_cov-(vd/2)*log(1+(1/v)*(y-mu)'*Stats.inv_cov*(y-mu)))[1]
+    
+        return lp
+    end
+    
 end
 
 
 ### p under prior alone
 
-function p_for_1(pcbt,pc_log,pc_log_pi,lambda_0,mu_0,k_0,v_0,D,N,datas,p_under_prior_alone)
+function p_for_1(consts::STUD,priors::MNIW,N,datas,p_under_prior_alone)
 
- Sigma = (lambda_0*(k_0+1)/(k_0*(v_0-D+1)))'
-    v = v_0-D+1
-    mu = mu_0
+ Sigma = (priors.lambda_0*(priors.k_0+1)/(priors.k_0*(priors.v_0-consts.D+1)))'
+    v = priors.v_0-consts.D+1
+    mu = priors.mu_0
     log_det_Sigma = log(det(Sigma))
     inv_Sigma = Sigma^-1
-    vd = v+D
-    d2=D/2
+    vd = v+consts.D
+    d2=consts.D/2
     for i=1:N
         y = datas[:,i]
               
-        lp = pcbt[vd] - (pcbt[v] + d2*pc_log[v] +  d2*pc_log_pi) -.5*log_det_Sigma- (vd/2)*log(1+(1/v)*(y-mu)'*inv_Sigma*(y-mu))
+        lp =consts.pc_gammaln_by_2[vd] - ( consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] +  d2*consts.pc_log_pi) -.5*log_det_Sigma- (vd/2)*log(1+(1/v)*(y-mu)'*inv_Sigma*(y-mu))
         
         p_under_prior_alone[i] = lp[1]
 
@@ -117,7 +141,7 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
 
  # update prior
 
- function update_prior(D,K_plus,means,sum_squares,counts,mu_0,v_0,k_0,lambda_0)
+ function update_prior(consts::STUD,K_plus,stats::NORM,counts,priors::MNIW)
 
      muu = zeros(Float64,(D,K_plus))
      sums=0
@@ -125,24 +149,24 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
      sumsig=0
      for k =1:K_plus
                 
-         m_Y = means[:,k]
+         m_Y = stats.means[:,k]
          n=counts[k]
-         mu_n = k_0/(k_0+n)*mu_0 + n/(k_0+n)*m_Y
-         SS = (sum_squares[:,:,k] - n*(m_Y*m_Y'))
-         zm_Y = m_Y-mu_0
-         lambda_n = lambda_0 + SS + k_0*n/(k_0+n)*(zm_Y)*(zm_Y)'
+         mu_n = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*m_Y
+         SS = (stats.sum_squares[:,:,k] - n*(m_Y*m_Y'))
+         zm_Y = m_Y-priors.mu_0
+         lambda_n = priors.lambda_0 + SS + priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
                 
-         v_n=v_0+n
+         v_n=priors.v_0+n
 
          #simualte from wishard
          for i = 1:v_n
-             A = chol(lambda_n)*randn(D)
+             A = chol(lambda_n)*randn(consts.D)
              invsig[:,:,k] += A*A'
          end
                 
          # simulate from mvnorm
-         A = chol(inv(invsig[:,:,k])/(k_0+n))
-         zs = randn(D)
+         A = chol(inv(invsig[:,:,k])/(priors.k_0+n))
+         zs = randn(consts.D)
          
          muu[:,k]=mu_n+A*zs              
          #println( muu[:,k])
@@ -152,8 +176,8 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
             
      meansig=inv(sumsig)
      
-     A = chol(meansig./k_0)
-     zs = randn(D)
+     A = chol(meansig./priors.k_0)
+     zs = randn(consts.D)
      
      mu_0=(meansig/sums')+A*zs    
      # println( mu_0)
