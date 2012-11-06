@@ -3,20 +3,17 @@
 # DPM toolbox by P.Neubauer -  distributed under GNU GPL licence V3.
 
 require(MASS)
-require(ape)
 source("Julia_call_function.R")
-source("elink.call.R")
-source("convert_Z_to_phylo.R")
 
 ## task 1 - estiamte correct number of sources without a baseline
 
 #  multi-normal source distributions - in an ideal world...
 
-num.sources = 3  # 'true' number of sources
+num.sources = 3 # 'true' number of sources
 num.elements = 5 # number of elements
-num.per.source = 30 # individuals per source
+num.per.source = 50 # individuals per source
 
-sep = 6 # separation of means
+sep = 5 # separation of means
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,num.per.source*num.sources,num.elements)
@@ -30,16 +27,15 @@ for (i in 1:num.sources){
 
 scores = princomp(data)$scores
 
-pdf('./Plots/very easy example.pdf',colormodel='cmyk')
-plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2')
-dev.off()
+plot(scores[,1],scores[,2],col=label)
+
 ##########################
 ### now use the DPM ######
 ##########################
 
 data.DPM = data-colMeans(data)
 
-# prior for gamma - a gamma(1,1) is reasonably broad,but wider priors usually don't make much of a difference
+# prior for gamma - a gamma(1,1) is reasonably broad
 a.0  = 1
 b.0  = 1
 
@@ -61,12 +57,12 @@ vars = 1 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and
 lambda.0 = diag(rep(vars,num.elements))
 
 # certainty about the mean...keep it low in the example
-k.0  = 0.01
+k.0  = 1
 # prior mean
 mu.0 = colMeans(data.DPM)
 
 # number of iterations per processor
-num.iters=5000
+num.iters=1000
 # numebr of parallel processing jobs
 np=2
 # thinning of the marcov chain
@@ -74,7 +70,7 @@ thin=10
 # total number of kept iterations
 niter=np*num.iters/thin
 
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbert/julia')
+output = DPM.call(baseline=F,iters=1000,thin=10,np=2, path.to.julia='/home/philbert/julia')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
@@ -83,29 +79,17 @@ classes = as.data.frame(output$K_record)
 
 # display the histogram of the number of sources
 
-burnin = 10  # number of (kept!) iterations to discard
-bins = (min(classes)-0.5):(max(classes)+0.5) # histogram bins
+burnin = 100 # number of iterations to discard
+bins = 1+max(classes)-min(classes) # histogram bins
 
-pdf('./Plots/hist very  easy example.pdf',colormodel='cmyk')
-hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
-dev.off()
+hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='')
+
 
 # now create the exact linkage tree and display
 
-S=class.id[,burnin:niter]
-Z = elink.call(S,path.to.julia='/home/philbert/julia')$tree
-N=num.per.source*num.sources
-Zp <- as.phylogg(Z,num.per.source*num.sources,rep('o',N))
-
-pdf('./Plots/tree very easy example.pdf')
-plot.phylo(reorder(Zp, order = "c")
-           ,edge.color=c(rep(1,length(Zp$edge.length)-1),0)
-           ,tip.color=c(label,0)
-           ,type='f')
-#text(0.03,0,0)
-#text(-0.05,0,0.05)
-#axisPhylo()
-dev.off()
+S=class.id(:,burnin:niter)
+Z = elink.call(S)
+plotmod(phytree(Z))
 
 
 #### playing with the covariance shows the sensitivity to the prior
@@ -124,100 +108,107 @@ dev.off()
 #########################################################
 
 # same as before, set up the data
-num.sources = 4  # sampled number of sources,
-extra.sources = 2 # extra baseline
-num.elements = 5 # number of elements
-num.per.source = rep(30,num.sources) # number of samples per source
-num.per.source = c(num.per.source,sample.int(30,extra.sources)+5) # number of samples per extra.sources
-as=num.sources+extra.sources
+num.sources = 5  # sampled number of sources,
+extra.sources = 3 # extra baseline
+num.elements = 4 # number of elements
+num.per.source(1:num.sources) = repmat(50,num.sources,1) # number of samples per source
+num.per.source(num.sources+1:num.sources+extra.sources) = randi(30,extra.sources,1)+5 # number of samples per extra.sources
 
-sep = 7 # separation of means
-means = mvrnorm(as,rep(0,num.elements),diag(rep(sep,num.elements)))
+sep = 3 # separation of means
+means = randnorm(num.sources+extra.sources,repmat(0,num.elements,1),diag(repmat(sep,num.elements,1)))
 
-data=matrix(NA,sum(num.per.source),num.elements)
-label=rep(NA,sum(num.per.source))
+data=zeros(sum(num.per.source),num.elements)
+label=[]
 a=0
-for (i in 1:as){
+for i=1:(num.sources+extra.sources)
     a=a+1
-    data[a:(a+num.per.source[i]-1),] <-mvrnorm(num.per.source[i],means[i,],diag(rep(1,num.elements)))
-    label[a:(a+num.per.source[i]-1)] <- i
-    a=a+num.per.source[i]-1
-}
+    data(a:(a+num.per.source(i)-1),:)=randnorm(num.per.source(i),means(:,i))'
+    label(a:(a+num.per.source(i))-1)=i
+    a=a+num.per.source(i)-1
+end
 
+# visualize naively using PCA
 
-scores = princomp(data)$scores
+[~,scores]=princomp(data)
 
-pdf('./Plots/easy example fix.pdf',colormodel='cmyk')
-plot(scores[,1],scores[,2],t='n',xlab='PCA1',ylab='PCA2')
+# how many sources are there?
+scatter(scores(:,1),scores(:,2))
 
-points(scores[1:sum(num.per.source[1:num.sources]),1],scores[1:sum(num.per.source[1:num.sources]),2],col=label[1:sum(num.per.source[1:num.sources])],pch=21,bg=label[1:sum(num.per.source[1:num.sources])])
+# not as easy as it is with colors...
+scatter(scores(:,1),scores(:,2),[],label,'LineWidth',2)
 
-points(scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),1],scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),2],col=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)],pch=23,bg=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)])
-
-dev.off()
-
+# crosses denote extra-baseline samples
+hold on
+for i=1:extra.sources
+    scatter(scores(label==num.sources+i,1),scores(label==num.sources+i,2),'kx')
+end
 
 ##########################
 ### now use the DPM ######
 ##########################
 
-baseline = data[1:sum(num.per.source[1:num.sources]),]
+baseline = data(1:sum(num.per.source(1:num.sources)),:)
 
 # add 1/4th of the samples from the baseline to the mixed set
 
-ixs = sample.int(sum(num.per.source[1:num.sources]),round(sum(num.per.source[1:num.sources])/4),1)
+ixs = randi(sum(num.per.source(1:num.sources)),round(sum(num.per.source(1:num.sources))/4),1)
 
-mixed = rbind(baseline[ixs,],data[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),])
-baseline=baseline[-ixs,]
+mixed = [baseline(ixs,:) data(sum(num.per.source(1:num.sources))+1:end,:)]
+baseline(ixs,:)=[]
 
-bix = 1:sum(num.per.source[1:num.sources])
-bix=bix[-ixs]
+bix = 1:sum(num.per.source(1:num.sources))
+bix(ixs)=[]
 
-mixedlabels=label[c(ixs,(sum(num.per.source[1:num.sources])+1):sum(num.per.source))]
-baselabels = label[bix]
+mixedlabels=label([ixs' sum(num.per.source(1:num.sources))+1:end])
 
-mixed =  mixed-colMeans(baseline)
-baseline = baseline-colMeans(baseline)
+mixed =  mixed-repmat(mean(baseline),size(mixed,1),1)
+baseline = baseline-repmat(mean(baseline),size(baseline,1),1)
 
+# priors is a structure with 6 elements
 
-# prior for gamma - a gamma(1,1) is reasonably broad,but wider priors usually don't make much of a difference
-a.0  = 1
-b.0  = 1
+# prior for gamma
+priors.a.0  = 1
+priors.b.0  = 1
 
 #Inv-Wishart prior
 
 # degrees of freedom - at least num.elements+1
 # higher v.0 equates to a more informative prior
-v.0  = num.elements+1
+priors.v.0  = num.elements+1
 
 # prior covariance - try a number of options - this shows how sensitive the
 # model/data combination is to prior choice...
 
-# play with the variance to see how the variance and source separation
-# interact (use same var for each element.) - for good source separation
-# this should not be very important i.e. the prior should not influence the
-# number of sources. This changes when sources are not easily identifyable
-
-vars = 1 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
-lambda.0 = diag(rep(vars,num.elements))
+vari = 1 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
+priors.var  = diag(repmat(vari,num.elements,1))
 
 # certainty about the mean...keep it low in the example
-k.0  = 0.01
+priors.k.0  = 1
 # prior mean
-mu.0 = colMeans(data.DPM)
+priors.mu.0 = mean(baseline)'
 
-# number of iterations per processor
-num.iters=500
-# numebr of parallel processing jobs
-np=2
-# thinning of the marcov chain
-thin=10
-# total number of kept iterations
-niter=np*num.iters/thin
+# data must be in p*n (not n*p as simulated)
 
-output = DPM.call(learn=T,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbert/julia',baseline=baseline,labels=baselabels)
+niter=2000 # number of MCMC iterations - choose so that the second significant digit of E(K^+)stabilizes - usually takes at least 1000 iterations
+intro=10 # number of Gibbs scans before starting the split merge and hyperparameter update - no need to tweak
+plots=1 # plotting on ? set to 1 for yes, 0 for no
+
+[class.id,~,k0lp,~,K.mix] = split.merge.sampler.fix(mixed',priors,baseline',label(bix),niter,intro,plots,1)
 
 
+
+mean(K.mix(200:1000))
+
+# display the histogram of the number of sources
+
+burnin = 100 # number of iterations to discard
+
+bin.width=1 # width of histogram bins
+
+hist(K.mix(1:niter/thin-burnin),min(K.mix):bin.width:max(K.mix),'FaceColor','grey')
+set(gca,'YTick',[])
+ylabel('density')
+xlabel('number of sources')
 
 # now create the exact linkage tree and display - for this one the first
 # num.sources leafs are the baseline

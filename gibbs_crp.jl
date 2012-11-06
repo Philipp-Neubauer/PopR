@@ -63,8 +63,7 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
                 
             else
                 likelihood[ell] = getlik(consts,priors,tempStats[ell],y,tempcounts[ell],true,false)
-            end
-                     
+            end                     
         
         end
         

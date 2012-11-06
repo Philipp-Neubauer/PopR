@@ -1,0 +1,13 @@
+function uniqueS{T}(A::AbstractArray{T}, sorted::Bool)
+    ss = Set{T}()
+    for a in A add(ss, a) end
+    ans = [s for s in ss]
+    sorted? sort!(ans): ans
+end
+
+function uniqueD{T}(A::AbstractArray{T}, sorted::Bool)
+    dd = Dict{T, Bool}()
+    for a in A dd[a] = true end
+    sorted? sort!(keys(dd)): keys(dd)
+end
+uniqueD(A) = uniqueD(A, false)

@@ -1,0 +1,1 @@
+wd = "/home/philbert/Papersampler"

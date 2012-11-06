@@ -4,14 +4,132 @@ bl=int(ARGS[1])
 thin = int(ARGS[3])
 numiters = int(ARGS[2])
 
-cd(ARGS[4])
+Typeof=ARGS[4]
+
+cd(ARGS[5])
 
 load("DPM_sampler.jl")
 
-
 datas =dlmread("datas.csv",",",Float64)
-datas=datas[2:end,2:end]'
+global datas=datas[2:end,2:end]'
 
+(D, N) = size(datas)
+
+########################################
+# define structures for normal model####
+########################################
+
+if(Typeof=="N")
+
+    single_priors = dlmread("single_priors.csv",",",Float64)
+    single_priors=single_priors[2:end,2]
+    
+    matrix_priors = dlmread("matrix_priors.csv",",",Float64)
+    matrix_priors=matrix_priors[2:end,2:end]
+   
+    # define normal set types
+
+    if bl.==1
+
+        type STUD
+            orgsum_squares
+            orgmeans
+            orginv_cov
+            orglog_det_cov
+            ns
+            sources
+            pc_max_ind
+            pc_gammaln_by_2
+            pc_log_pi
+            pc_log
+            D
+        end
+
+    else
+    
+        type STUD
+            
+            pc_max_ind
+            pc_gammaln_by_2
+            pc_log_pi
+            pc_log
+            D
+        end
+    end
+  
+    pc_max_ind=1e5
+    # precompute student-T posterior predictive distribution constants
+    consts = STUD(pc_max_ind,lgamma((1:pc_max_ind)/2),log(pi),log(1:pc_max_ind),D)
+
+   
+    # prior composite type
+    type MNIW
+        
+        a_0
+        b_0
+        k_0
+        v_0
+        mu_0
+        lambda_0
+        
+    end
+    
+    priors= MNIW(single_priors[1],single_priors[2],single_priors[3],single_priors[4],single_priors[5:end],matrix_priors)
+    
+    # stats composite type
+    type NORM
+        
+        means
+        sum_squares
+        inv_cov
+        log_det_cov
+        
+    end
+    
+     # set up NORM type stats
+    Stats=NORM(zeros(Float64,(D,N)),zeros(Float64,(D,D,N)),Array(Float64,(D,D,N)),Array(Float64,(N)))
+    
+    # define how to access subsets of individuals
+    
+    function ref(A::NORM,k::Any)
+
+        NORM(A.means[:,k],A.sum_squares[:,:,k],A.inv_cov[:,:,k],A.log_det_cov[k])
+            
+    end
+
+     # define how to assign subsets of individuals
+    
+    function assign(A::NORM,B::NORM,k::Any)
+
+        A.means[:,k]=B.means
+        A.sum_squares[:,:,k] = B.sum_squares
+        A.inv_cov[:,:,k] = B.inv_cov
+        A.log_det_cov[k] = B.log_det_cov
+    
+    end
+
+    function assign(A::NORM,B::Number,k::Any)
+
+        A.means[:,k]=B
+        A.sum_squares[:,:,k] = B
+        A.inv_cov[:,:,k] = B
+        A.log_det_cov[k] = B
+    
+    end
+    
+end # elseif
+
+
+    # define structures for Multinomial model
+    # if(Typeof=="MN")
+
+    #end
+
+
+#################################################
+######### --- set up outputs ---- ###############
+#################################################
+    
 outs={}
 np = nprocs()
 nit=int(np*numiters/thin);
@@ -21,22 +139,31 @@ k_0s=Array(Float64,nit)
 K_record=Array(Int8,nit)
 alpha_record=Array(Float64,nit)
 
+#################################################
+######### --- RUN IT ----########################
+#################################################
 
 if bl.==1
   
    @everywhere load("DPM_sampler_fix.jl")
    for n=1:np
-       push(outs,fetch(@spawn DPM_sampler_fix(numiters,thin)))
+
+       push(outs,fetch(@spawn DPM_sampler_fix(numiters,thin,Stats,priors,consts)))
  
    end
+   
 else
+
    @everywhere load("DPM_sampler.jl")
    for n=1:np
     
-       push(outs,fetch(@spawn DPM_sampler(numiters,thin)))
+       push(outs,fetch(@spawn DPM_sampler(datas,1000,1,Stats,priors,consts)))
 
    end
+   
 end
+
+# get outputs
 
 nit=int(numiters/thin);
 n=0
@@ -48,7 +175,9 @@ n=0
         alpha_record[((n-1)*nit+1):((n-1)*nit+nit)] = outs[i][4]
     end
 
-# write out simualtions
+#################################################
+######### --- Write out ----#####################
+#################################################
 
 csvwrite("source_ids.csv",class_ids)
 csvwrite("K_record.csv",K_record)

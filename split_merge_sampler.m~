@@ -66,46 +66,7 @@ alpha = 1;
 max_class_id = N;
 % specify a memory efficient type for class_ids
 class_id_type = 'uint16';
-
-k_0s=zeros(num_sweeps,1);
-K_plus = 1;
-class_id = zeros(N,num_sweeps,class_id_type);
-K_record = zeros(num_sweeps,1);
-alpha_record = zeros(num_sweeps,1);
-lp_record = zeros(num_sweeps,1);
-
-% seat the first customer at the first table
-class_id(1,1) = 1;
-
-% precompute student-T posterior predictive distribution constants
-pc_max_ind = 1e5;
-pc_gammaln_by_2 = 1:pc_max_ind;
-pc_gammaln_by_2 = gammaln(pc_gammaln_by_2/2);
-pc_log_pi = reallog(pi);
-pc_log = reallog(1:pc_max_ind);
-
-means = zeros(D,max_class_id);
-sum_squares = zeros(D,D,max_class_id);
-inv_cov = zeros(D,D,max_class_id);
-log_det_cov = zeros(max_class_id,1);
-counts = zeros(max_class_id,1,'uint16');
-counts(1) = 1;
-
-
-% sit first individual at first table
-y = training_data(:,1);
-yyT = y*y';
-[~,ldc,ic] = lp_tpp_helper(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y,1,y,yyT,k_0,mu_0,v_0,lambda_0);
-
-means(:,1) = y;
-sum_squares(:,:,1) = y * y';
-counts(1) = 1;
-log_det_cov(1) = ldc;
-inv_cov(:,:,1) = ic;
-
-yyT = zeros(D,D,N);
-
-d2 = D/2;
+re
 
 % initialize timers
 time_1_obs = 0;

@@ -1,13 +1,3 @@
-# uniques
-
-function unique{T}(A::AbstractArray{T}, sorted::Bool)
-    dd = Dict{T, Bool}()
-    for a in A dd[a] = true end
-    sorted? sort!(keys(dd)): keys(dd)
-end
-
-# student log lik
-
 function student_lp(pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_log,y,n,m_Y,k_0,mu_0,v_0,lambda_0,D,SS,suffs)
          
 if n.==0
