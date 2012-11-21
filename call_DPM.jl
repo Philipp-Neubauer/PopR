@@ -13,7 +13,7 @@ cd(ARGS[5])
 
 # define type alias for floats same as for Int
 
-if is(Int,Int)
+if is(Int,Int64)
     typealias Float Float64
 else
     typealias Float Float32

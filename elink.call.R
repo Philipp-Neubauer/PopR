@@ -7,7 +7,7 @@ elink.call <- function(class.ids,path.to.julia=getwd(),elink_path=getwd()){
       exec=file.path(path.to.julia,'./julia')
   } else
     {
-      exec=file.path(path.to.julia,'julia')
+      exec=file.path(path.to.julia,'julia/julia.bat')
   }    
  
   command=paste(exec,file.path(elink_path,'elink.jl'),getwd())
