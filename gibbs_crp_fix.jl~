@@ -5,56 +5,54 @@ function crp_gibbs(datas,iter,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_
 
     for i=1:N
     
-        if iter==1 && i==1
-            continue
-        end
-       
         y = datas[:,i]
        
         old_class_ids= class_idd[i]
        
-        if old_class_ids != 0
-            counts[old_class_ids] = counts[old_class_ids] -1
+      
+        counts[old_class_ids] = counts[old_class_ids] -1
+        allcounts[old_class_ids] = allcounts[old_class_ids] -1
 
-            old_class_log_det_Sigma = log_det_cov[old_class_ids]
-            old_class_inv_Sigma = inv_cov[:,:,old_class_ids]
+        old_class_log_det_Sigma = log_det_cov[old_class_ids]
+        old_class_inv_Sigma = inv_cov[:,:,old_class_ids]
             
-            if counts[old_class_ids].==0
+        if counts[old_class_ids].==0 && old_class_id>sources
                 # delete class compact all data structures
                 
-                hits = class_idd.>=old_class_ids;
-                class_idd[hits] = class_idd[hits]-1;
-                K_plus = K_plus-1;
+            hits = class_idd.>=old_class_ids;
+            class_idd[hits] = class_idd[hits]-1;
+            K_plus = K_plus-1;
                 
-                hits = [1:old_class_ids-1, old_class_ids+1:(K_plus+1)]
+            hits = [1:(old_class_ids-1), (old_class_ids+1):(K_plus+1)]
 
-                #if !isempty(hits)
-                means[:,1:K_plus] = means[:,hits];
-                means[:,K_plus+1] = 0;
-                sum_squares[:,:,1:K_plus] = sum_squares[:,:,hits];
-                sum_squares[:,:,1+K_plus] = 0;
-                counts[1:K_plus] = counts[hits];
-                counts[K_plus+1] = 0;
+            means[:,1:K_plus] = means[:,hits];
+            means[:,K_plus+1] = 0;
+            sum_squares[:,:,1:K_plus] = sum_squares[:,:,hits];
+            sum_squares[:,:,1+K_plus] = 0;
+            counts[1:K_plus] = counts[hits];
+            counts[K_plus+1] = 0;
+            allcounts[1:K_plus] = allcounts[hits];
+            allcounts[K_plus+1] = 0;
                 
-                log_det_cov[1:K_plus] = log_det_cov[hits];
-                log_det_cov[K_plus+1] = 0;
-                inv_cov[:,:,1:K_plus] = inv_cov[:,:,hits];
-                inv_cov[:,:,K_plus+1] = 0;
-                # end
+            log_det_cov[1:K_plus] = log_det_cov[hits];
+            log_det_cov[K_plus+1] = 0;
+            inv_cov[:,:,1:K_plus] = inv_cov[:,:,hits];
+            inv_cov[:,:,K_plus+1] = 0;
                 
-            else
-                means[:,old_class_ids] = (1/(counts[old_class_ids]))*((counts[old_class_ids]+1)*means[:,old_class_ids] - y);
-                sum_squares[:,:,old_class_ids] = sum_squares[:,:,old_class_ids] - yyT[:,:,i];
-            end
-        end
-        
-        # complete the CRP prior with new source prob.
-        if iter != 1
-            prior = [counts[1:K_plus]; alpha]/(N-1+alpha)
+                
         else
-            prior = [counts[1:K_plus]; alpha]/(i-1+alpha)
+            means[:,old_class_ids] = (1/(allcounts[old_class_ids]))*((allcounts[old_class_ids]+1)*means[:,old_class_ids] - y);
+            sum_squares[:,:,old_class_ids] = sum_squares[:,:,old_class_ids] - yyT[:,:,i];
         end
         
+
+        priornum = Array(Float64,K_plus)
+        # complete the CRP prior with new source prob.
+       
+        priornum[counts[1:K_plus].!=0] = counts[counts[1:K_plus].!=0]
+        priornum[counts[1:K_plus].==0] = repmat(alpha,sum[counts[1:K_plus].==0),1)/(sum(counts[1:K_plus].==0)+1)
+        prior = [priornum';alpha/(sum(counts[1:K_plus)==0]+1)]/(N-1+alpha);
+               
         likelihood = zeros(Float64,(length(prior),1))
               
         # as per Radford's Alg. 3 compute the posterior predictive
@@ -68,7 +66,7 @@ function crp_gibbs(datas,iter,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_
         for ell = 1:K_plus
             # get the class ids of the points sitting at source l
             
-            n = counts[ell]
+            n = allcounts[ell]
             
             m_Y = means[:,ell]
             mu_n = k_0/(k_0+n)*mu_0 + n/(k_0+n)*m_Y
@@ -88,7 +86,7 @@ function crp_gibbs(datas,iter,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_
             # particle at its old source then we can put the old
             # log_det_Sigma and inv_Sigma back, otherwise we need to update
             # both the old source and the new source
-            if old_class_ids != 0
+           
             
                 if old_class_ids .== ell
                     S = (sum_squares[:,:,ell] - n*(m_Y*m_Y'))
@@ -104,19 +102,7 @@ function crp_gibbs(datas,iter,class_idd,pc_max_ind,pc_gammaln_by_2,pc_log_pi,pc_
                     log_det_Sigma = log_det_cov[ell]
                     inv_Sigma = inv_cov[:,:,ell];
                 end
-            else
-                # this case is the first sweep through the data
-                S = (sum_squares[:,:,ell] - n*(m_Y*m_Y'))
-                zm_Y = m_Y-mu_0
-                lambda_n = lambda_0 + S  +  k_0*n/(k_0+n)*(zm_Y)*(zm_Y)'
-                Sigma = (lambda_n*(k_n+1)/(k_n*(v_n-D+1)))';
-                
-                log_det_Sigma = log(det(Sigma));
-                inv_Sigma = (Sigma)^-1;
-                log_det_cov[ell] = log_det_Sigma;
-                inv_cov[:,:,ell] = inv_Sigma;
-            end
-            
+                       
             vd = v+D;
             d2 = D/2
             # the log likelihood for class ell
