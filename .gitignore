@@ -3,3 +3,12 @@
 .RData
 Papersampler.Rproj
 julia
+K_record.csv
+baseline.csv
+datas.csv
+gammas.csv
+k_0s.csv
+labels.csv
+matrix_priors.csv
+single_priors.csv
+source_ids.csv
