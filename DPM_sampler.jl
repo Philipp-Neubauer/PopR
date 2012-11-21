@@ -1,5 +1,6 @@
 function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
 
+    #load("define_types.jl")
     load("Julia_code_support.jl")
     load("gibbs_crp.jl")
     load("split-merge.jl")
@@ -56,7 +57,7 @@ function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
       
         (class_id,K_plus,Stats,counts) = crp_gibbs(datas,iter,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
 
-    assert(all(round((Stats.means)*counts/90,4) .==round( mean(datas,2),4)))
+        # assert(all(round((Stats.means)*counts/90,4) .==round( mean(datas,2),4)))
 
         # update alpha
 

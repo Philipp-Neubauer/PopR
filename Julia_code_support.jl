@@ -1,3 +1,77 @@
+function preclass(consts,Stats,priors,allcounts,counts,class_id)
+
+    dists=Array(Float64,consts.sources)
+    for i=1:consts.N
+        
+        for j=1:(consts.sources)
+            dists[j] =  sqrt(sum((consts.datas[:,i]-consts.orgmeans[:,j]).^2));
+        end
+    
+        choose=find(rand().>=(1-cumsum(dists./sum(dists))))[1]
+        allcounts[choose]=allcounts[choose]+1
+        counts[choose]=counts[choose]+1
+        class_id[i]=choose;
+        
+        n = allcounts[choose]
+               
+        Stats.means[:,choose] = Stats.means[:,choose] + (1/n)*(consts.datas[:,i]-Stats.means[:,choose]);
+        Stats.sum_squares[:,:,choose] = Stats.sum_squares[:,:,choose] + consts.datas[:,i]*consts.datas[:,i]'
+        
+        
+        k_n = priors.k_0+n;
+        v_n = priors.v_0+n;
+        
+        zm_Y = Stats.means[:,choose]-priors.mu_0
+        SS = Stats.sum_squares[:,:,choose]-n*(Stats.means[:,choose]*Stats.means[:,choose]')
+        lambda_n = priors.lambda_0 + SS + priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
+        Sigma = lambda_n*(k_n+1)/(k_n*(v_n-consts.D+1))
+    
+        Stats.log_det_cov[choose] = log(det(Sigma))
+        Stats.inv_cov[:,:,choose] = inv(Sigma)
+    
+    end
+
+    return (Stats,allcounts,counts)
+end
+
+# pre-allocate stats and consts
+
+
+function preallocate(consts,Stats,priors,allcounts)
+
+    is=unique(consts.labels,true);
+
+   for i=1:consts.sources
+    
+        Stats.means[:,i] = mean(consts.baseline[:,consts.labels.==is[i]],2)
+        consts.orgmeans[:,i] =  Stats.means[:,i]
+        allcounts[i] = size(consts.baseline[:,consts.labels.==is[i]],2)
+        consts.ns[i] = size(consts.baseline[:,consts.labels.==is[i]],2)
+        consts.orgsum_squares[:,:,i] = (baseline[:,consts.labels.==is[i]]-repmat(mean(consts.baseline[:,consts.labels.==is[i]],2),1,allcounts[i]))*(consts.baseline[:,consts.labels.==is[i]]-repmat(mean(consts.baseline[:,consts.labels.==is[i]],2),1,allcounts[i]))'
+        Stats.sum_squares[:,:,i] =  consts.orgsum_squares[:,:,i]
+    
+        consts.orgsum_squares[:,:,i] = consts.orgsum_squares[:,:,i]+consts.ns[i]*(Stats.means[:,i]*Stats.means[:,i]');
+        Stats.sum_squares[:,:,i] = Stats.sum_squares[:,:,i]+consts.ns[i]*(Stats.means[:,i]*Stats.means[:,i]');
+    
+        n = size(consts.baseline[:,consts.labels.==is[i]],2)
+        k_n = priors.k_0+n
+        v_n = priors.v_0+n
+    
+        zm_Y = Stats.means[:,i]-priors.mu_0
+        SS = Stats.sum_squares[:,:,i]-n*(Stats.means[:,i]*Stats.means[:,i]')
+        lambda_n = priors.lambda_0 + SS +  priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
+        Sigma = lambda_n*(k_n+1)/(k_n*(v_n-consts.D+1))
+    
+        Stats.log_det_cov[i] = log(det(Sigma))
+        consts.orglog_det_cov[i] =  Stats.log_det_cov[i]
+        Stats.inv_cov[:,:,i] = inv(Sigma)
+        consts.orginv_cov[:,:,i] =  Stats.inv_cov[:,:,i]
+    end
+
+    return(consts,Stats,allcounts)
+
+end
+
 #unique
 
 function unique{T}(A::AbstractArray{T}, sorted::Bool)
@@ -160,7 +234,13 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
 
          #simualte from wishard
          for i = 1:v_n
-             A = chol(lambda_n)*randn(consts.D)
+             try
+                 A = chol(lambda_n)*randn(consts.D)
+             catch
+                 return(priors.k_0,priors.mu_0)
+             end
+         
+             
              invsig[:,:,k] += A*A'
          end
                 
@@ -189,7 +269,7 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
      end
      
      k_0 = randg((K_plus+1)/2)*((1/(sums)+1)/2)[1]
-     #println(k_0)
-     return(k_0,mu_0)
+     #println(mu_0)
+     return(k_0,mu_0[1:consts.D])
 
  end

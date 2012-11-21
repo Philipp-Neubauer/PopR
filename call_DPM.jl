@@ -1,15 +1,13 @@
 # julia code main wrapper
 
 bl=int(ARGS[1])
-thin = int(ARGS[3])
-numiters = int(ARGS[2])
+thin =int(ARGS[3])
+numiters =int(ARGS[2])
 
 Typeof=ARGS[4]
 
 cd(ARGS[5])
-
-load("DPM_sampler.jl")
-
+ #cd( "/home/philbert/Papersampler")
 datas =dlmread("datas.csv",",",Float64)
 global datas=datas[2:end,2:end]'
 
@@ -19,7 +17,13 @@ global datas=datas[2:end,2:end]'
 # define structures for normal model####
 ########################################
 
-if(Typeof=="N")
+function unique{T}(A::AbstractArray{T}, sorted::Bool)
+    dd = Dict{T, Bool}()
+    for a in A dd[a] = true end
+    sorted? sort!(keys(dd)): keys(dd)
+end
+
+#if(Typeof=="N")
 
     single_priors = dlmread("single_priors.csv",",",Float64)
     single_priors=single_priors[2:end,2]
@@ -29,48 +33,28 @@ if(Typeof=="N")
    
     # define normal set types
 
+    pc_max_ind=int(1e5)
+    
     if bl.==1
-
-        type STUD
-            orgsum_squares
-            orgmeans
-            orginv_cov
-            orglog_det_cov
-            ns
-            sources
-            pc_max_ind
-            pc_gammaln_by_2
-            pc_log_pi
-            pc_log
-            D
-        end
+    
+        load("fixtype.jl")
 
     else
-    
-        type STUD
-            
-            pc_max_ind
-            pc_gammaln_by_2
-            pc_log_pi
-            pc_log
-            D
-        end
+
+        load("define_types.jl")
+      
     end
   
-    pc_max_ind=1e5
-    # precompute student-T posterior predictive distribution constants
-    consts = STUD(pc_max_ind,lgamma((1:pc_max_ind)/2),log(pi),log(1:pc_max_ind),D)
-
-   
+     
     # prior composite type
     type MNIW
         
-        a_0
-        b_0
-        k_0
-        v_0
-        mu_0
-        lambda_0
+        a_0::Float64
+        b_0::Float64
+        k_0::Float64
+        v_0::Float64
+        mu_0::Array{Float64,1}
+        lambda_0::Array{Float64,2}
         
     end
     
@@ -117,14 +101,7 @@ if(Typeof=="N")
     
     end
     
-end # elseif
-
-
-    # define structures for Multinomial model
-    # if(Typeof=="MN")
-
-    #end
-
+#end
 
 #################################################
 ######### --- set up outputs ---- ###############
@@ -146,6 +123,7 @@ alpha_record=Array(Float64,nit)
 if bl.==1
   
    @everywhere load("DPM_sampler_fix.jl")
+   #@everywhere load("define_types.jl")
    for n=1:np
 
        push(outs,fetch(@spawn DPM_sampler_fix(numiters,thin,Stats,priors,consts)))
@@ -155,9 +133,10 @@ if bl.==1
 else
 
    @everywhere load("DPM_sampler.jl")
+   # @everywhere load("define_types.jl")
    for n=1:np
     
-       push(outs,fetch(@spawn DPM_sampler(datas,1000,1,Stats,priors,consts)))
+       push(outs,fetch(@spawn DPM_sampler(datas,numiters,thin,Stats,priors,consts)))
 
    end
    

@@ -3,10 +3,10 @@
 # thin = thinning of the markov chain(s)
 # np = number of processes = number of chains
 # !!! np must be less or equal to number of available proceesors/cores (e.g., 2 on a dual core machine, or 3 on a quad core machine)
-# !!! WARNING setting np=number of cores  may take away all or most of your computing resources
+# !!! WARNING setting np=number of cores could take away all or most of your computing resources
 
 DPM.call <- function(datas=NULL,baseline=NULL,labels=NULL,learn=FALSE,iters=1000,thin=10,np=1,
-             path.to.julia=getwd(),call_DPM_path=getwd())             
+             typeof='N',path.to.julia=getwd(),call_DPM_path=getwd())             
 {
   write.csv(file='single_priors.csv',c(a.0,b.0,k.0,v.0,mu.0))
   write.csv(file='matrix_priors.csv',lambda.0)
@@ -27,7 +27,7 @@ DPM.call <- function(datas=NULL,baseline=NULL,labels=NULL,learn=FALSE,iters=1000
 
 bl=ifelse(learn==F,0,1)
   
-  command=paste(exec,'-p',np,file.path(call_DPM_path,'call_DPM.jl'),bl,iters,thin,getwd())
+  command=paste(exec,'-p',np,file.path(call_DPM_path,'call_DPM.jl'),bl,iters,thin,typeof,getwd())
   system(command)
   
  class_ids <- read.csv("source_ids.csv",header=F)

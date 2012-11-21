@@ -40,7 +40,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
             classhelp = ones(Int16,length(ixxs))
             classhelp[class_idd[ixxs].==c_i]=2
             
-            for o = [1, 2, randperm(n_i+n_j-2)+2]
+            for o = n_i+n_j>2 ? [1, 2, randperm(n_i+n_j-2)+2] : [1,2]
                 
                 k=ixxs[o]
                 
@@ -136,7 +136,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
             ixxs=ixxs[ixxs.!=ind[2]]
             ixxs=[ind[1], ind[2], ixxs]
             
-            for o = [1, 2, randperm(n_j-2)+2]
+            for o = n_j>2 ? [1, 2, randperm(n_j-2)+2] : [1, 2]
                 
                 k=ixxs[o]
                 

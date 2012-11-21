@@ -2,7 +2,11 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
 
     # take this out later !!!!
     #class_idd=class_id
-
+    class_idd_old=deepcopy(class_idd)
+    Stats_old = deepcopy(Stats)
+    counts_old=deepcopy(counts)
+    K_plus_old=deepcopy(K_plus)
+    
     for i=1:N
     
         if iter==1 && i==1
@@ -10,6 +14,7 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
         end
        
         y = datas[:,i]
+        
        
         old_class_ids= class_idd[i]
 
@@ -68,10 +73,15 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
         end
         
         likelihood[K_plus_temp+1] = p_under_prior_alone[i]
+
+        if !all((likelihood.>=0.0) | (likelihood.<=0.0))
+        #println(likelihood)
+            return(class_idd_old,K_plus_old,Stats_old,counts_old)
+        end
         
         likelihood = exp(likelihood-max(likelihood))
 
-        likelihood = likelihood/sum(likelihood);
+        likelihood = likelihood/sum(likelihood)
         
         # compute the posterior over seating assignment for datum i
         posterior = prior.*likelihood; # this is actually a proportionality
@@ -79,7 +89,7 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
         posterior = posterior/sum(posterior);
         
         # pick the new source
-        cdf = cumsum(posterior);
+        cdf = cumsum(posterior)
         rn = rand()
         
         new_class_ids = find(cdf.>rn)[1]
