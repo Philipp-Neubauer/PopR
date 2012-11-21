@@ -21,13 +21,13 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
             # (RANDOM SAMPLE THE ORDER! [Dahl 2003]]
             n_S=ones(Int16,2,1) # keeps track of the number of items at each 'new-old' component
            
-            sstats = NORM(zeros(Float64,D,2),zeros(Float64,D,D,2),zeros(Float64,D,D,2),zeros(Float64,2))
+            sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
                       
-            cstats = NORM( zeros(Float64,D,1),zeros(Float64,D,D),zeros(Float64,D,D),zeros(Float64,1))
+            cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
 
             cns = 0
-            clik=0;cprod=1;setlik=0;likelihood=zeros(Float64,(1,2))
-            prob_i=zeros(Float64,(2,1))
+            clik=0;cprod=1;setlik=0;likelihood=zeros(Float,(1,2))
+            prob_i=zeros(Float,(2,1))
 
             idxar = Array(Bool,N,1)
             for k=1:N
@@ -119,15 +119,15 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
             # [RANDOM SAMPLE THE ORDER! [Dahl 2003]]
             n_S=ones(Int16,2,1) # keeps track of the number of items at each 'new-old' component
            
-            sstats = NORM(zeros(Float64,D,2),zeros(Float64,D,D,2),zeros(Float64,D,D,2),zeros(Float64,2))
+            sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
                       
-            cstats = NORM( zeros(Float64,D,1),zeros(Float64,D,D),zeros(Float64,D,D),zeros(Float64,1))
+            cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
             
-            cmeans = zeros(Float64,(D,1))
-            csums = zeros(Float64,(D,D))
+            cmeans = zeros(Float,(D,1))
+            csums = zeros(Float,(D,D))
             cns = 0
-            clik=0;cprod=1;setlik=0;likelihood=zeros(Float64,(1,2))
-            prob_i=zeros(Float64,(2,1))
+            clik=0;cprod=1;setlik=0;likelihood=zeros(Float,(1,2))
+            prob_i=zeros(Float,(2,1))
             
             classids_temp[ind[1]]=K_plus+1 # ind 1 marks new class
                  

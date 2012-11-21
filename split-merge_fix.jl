@@ -44,9 +44,9 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
             # (RANDOM SAMPLE THE ORDER! [Dahl 2003]]
         n_S=ones(Int16,2,1) # keeps track of the number of items at each 'new-old' component
            
-        sstats = NORM(zeros(Float64,D,2),zeros(Float64,D,D,2),zeros(Float64,D,D,2),zeros(Float64,2))
+        sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
                       
-        cstats = NORM( zeros(Float64,D,1),zeros(Float64,D,D),zeros(Float64,D,D),zeros(Float64,1))
+        cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
 
         if c_i<=consts.sources || c_j<=consts.sources
 
@@ -109,8 +109,8 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
         end
             
         
-        clik=0;cprod=1;setlik=0;likelihood=zeros(Float64,(1,2))
-        prob_i=zeros(Float64,(2,1))
+        clik=0;cprod=1;setlik=0;likelihood=zeros(Float,(1,2))
+        prob_i=zeros(Float,(2,1))
 
         idxar = Array(Bool,N,1)
         for k=1:N
@@ -232,9 +232,9 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
             # [RANDOM SAMPLE THE ORDER! [Dahl 2003]]
         n_S=ones(Int16,2,1) # keeps track of the number of items at each 'new-old' component
            
-        sstats = NORM(zeros(Float64,D,2),zeros(Float64,D,D,2),zeros(Float64,D,D,2),zeros(Float64,2))
+        sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
         
-        cstats = NORM( zeros(Float64,D,1),zeros(Float64,D,D),zeros(Float64,D,D),zeros(Float64,1))
+        cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
 
         if c_i<=consts.sources
                     
@@ -250,8 +250,8 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
         end
        
            
-            clik=0;cprod=1;setlik=0;likelihood=zeros(Float64,(1,2))
-            prob_i=zeros(Float64,(2,1))
+            clik=0;cprod=1;setlik=0;likelihood=zeros(Float,(1,2))
+            prob_i=zeros(Float,(2,1))
          
             classids_temp[ind[2]]=K_plus+1 # ind 1 marks new class
                  

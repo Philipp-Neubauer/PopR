@@ -15,20 +15,20 @@ function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
 
     nit=int(num_iters/thin)
 
-    k_0s=zeros(Float64,nit)
-    class_ids = zeros(Int64,(N,nit))
-    K_record = zeros(Int64,nit)
-    alpha_record = zeros(Float64,nit)
+    k_0s=zeros(Float,nit)
+    class_ids = zeros(Int,(N,nit))
+    K_record = zeros(Int,nit)
+    alpha_record = zeros(Float,nit)
       
-    class_id = zeros(Int64,N)
+    class_id = zeros(Int,N)
     class_id[1,1] = 1
-    counts = zeros(Int64,max_class_id,1)
+    counts = zeros(Int,max_class_id,1)
     counts[1] = 1
     K_plus = 1
-    p_under_prior_alone = zeros(Float64,N);
+    p_under_prior_alone = zeros(Float,N);
     
     
-    yyT = zeros(Float64,(D,D,N))
+    yyT = zeros(Float,(D,D,N))
     for i=1:N
         yyT[:,:,i]=datas[:,i]*datas[:,i]'
     end

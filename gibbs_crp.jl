@@ -59,7 +59,7 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
             prior = [tempcounts[1:K_plus_temp]; alpha]/(i-1+alpha)
         end
         
-        likelihood = zeros(Float64,(length(prior),1))
+        likelihood = zeros(Float,(length(prior),1))
               
         for ell = 1:K_plus_temp
            

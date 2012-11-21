@@ -1,74 +1,18 @@
-#if(Typeof=="N")
 
-    single_priors = dlmread("single_priors.csv",",",Float64)
-    single_priors=single_priors[2:end,2]
-    
-    matrix_priors = dlmread("matrix_priors.csv",",",Float64)
-    matrix_priors=matrix_priors[2:end,2:end]
-   
-    # define normal set types
-
-    pc_max_ind=1e5
-    
-    if bl.==1
-
-    
-        baseline =dlmread("baseline.csv",",",Float64)
-        global baseline=baseline[2:end,2:end]'
-
-
-        label = dlmread("labels.csv",",",Float64)
-        label = label[2:end,2]
-        label=int(label)
-
-        function unique{T}(A::AbstractArray{T}, sorted::Bool)
-            dd = Dict{T, Bool}()
-            for a in A dd[a] = true end
-            sorted? sort!(keys(dd)): keys(dd)
-        end
-        
-        uniqs=unique(label,true)
-        labels=Array(Int64,length(label))
-        for i=1:length(uniqs)
-            labels[label.==uniqs[i]]=i
-        end
-
-        type STUD
-            datas
-            baseline
-            orgsum_squares
-            orgmeans
-            orginv_cov
-            orglog_det_cov
-            ns
-            labels
-            sources
-            pc_max_ind
-            pc_gammaln_by_2
-            pc_log_pi
-            pc_log
-            D
-            N
-        end
-         
-    # precompute student-T posterior predictive distribution constants
-    consts = STUD(datas,baseline,Array(Float64,(D,D,max(labels))),Array(Float64,(D,max(labels))),Array(Float64,(D,D,max(labels))),Array(Float64,max(labels)),Array(Int64,max(labels)),labels,max(labels),pc_max_ind,lgamma((1:pc_max_ind)/2),log(pi),log(1:pc_max_ind),D,N)
-
-    else
     
         type STUD
             
-            pc_max_ind
-            pc_gammaln_by_2
-            pc_log_pi
-            pc_log
-            D
+            pc_max_ind::Int
+            pc_gammaln_by_2::Array{Float,1}
+            pc_log_pi::Float
+            pc_log::Array{Float,1}
+            D::Int
         end
 
         # precompute student-T posterior predictive distribution constants
         consts = STUD(pc_max_ind,lgamma((1:pc_max_ind)/2),log(pi),log(1:pc_max_ind),D)
         
-    end
+   
   
   
 
@@ -98,7 +42,7 @@
     end
     
      # set up NORM type stats
-    Stats=NORM(zeros(Float64,(D,N)),zeros(Float64,(D,D,N)),Array(Float64,(D,D,N)),Array(Float64,(N)))
+    Stats=NORM(zeros(Float,(D,N)),zeros(Float,(D,D,N)),Array(Float,(D,D,N)),Array(Float,(N)))
     
     # define how to access subsets of individuals
     

@@ -54,7 +54,7 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
         
         # prior with new source prob.
         
-        priornum = Array(Float64,K_plus_temp)
+        priornum = Array(Float,K_plus_temp)
         # complete the CRP prior with new source prob.
         
         priornum[tempcounts[1:K_plus_temp].!=0] = tempcounts[1:K_plus_temp][tempcounts[1:K_plus_temp].!=0]
@@ -62,7 +62,7 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
         prior = [priornum;alpha/(sum(tempcounts[1:K_plus_temp].==0)+1)]/(consts.N-1+alpha);
       
         
-        likelihood = zeros(Float64,(length(prior),1))
+        likelihood = zeros(Float,(length(prior),1))
               
         for ell = 1:K_plus_temp
            

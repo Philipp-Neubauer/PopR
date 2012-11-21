@@ -9,16 +9,16 @@ function  DPM_sampler_fix(num_iters,thin,Stats,priors,consts)
     # initialize structures
 
     nit=int(num_iters/thin)
-    k_0s=Array(Float64,nit)
+    k_0s=Array(Float,nit)
     K_plus = consts.sources
-    counts = zeros(Int64,consts.N,1)
-    allcounts = zeros(Int64,consts.N,1)
-    class_id = Array(Int64,consts.N)
-    class_ids = Array(Int64,(consts.N,nit))
-    K_record = Array(Int64,nit)
+    counts = zeros(Int,consts.N,1)
+    allcounts = zeros(Int,consts.N,1)
+    class_id = Array(Int,consts.N)
+    class_ids = Array(Int,(consts.N,nit))
+    K_record = Array(Int,nit)
    
-    alpha_record = Array(Float64,nit)
-    p_under_prior_alone = Array(Float64,consts.N);
+    alpha_record = Array(Float,nit)
+    p_under_prior_alone = Array(Float,consts.N);
 
     consts,Stats,allcounts = preallocate(consts,Stats,priors,allcounts)   
     Stats,allcounts,counts = preclass(consts,Stats,priors,allcounts,counts,class_id)

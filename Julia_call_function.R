@@ -22,7 +22,7 @@ DPM.call <- function(datas=NULL,baseline=NULL,labels=NULL,learn=FALSE,iters=1000
       exec=file.path(path.to.julia,'./julia')
   } else
     {
-      exec=file.path(path.to.julia,'julia')
+      exec=file.path(path.to.julia,'/julia/julia.bat')
   }    
 
 bl=ifelse(learn==F,0,1)

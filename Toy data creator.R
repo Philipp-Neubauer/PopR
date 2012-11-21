@@ -147,7 +147,7 @@ for (i in 1:as){
 
 scores = princomp(data)$scores
 
-pdf('./Plots/easy example fix.pdf',colormodel='cmyk')
+pdf('../easy example fix.pdf',colormodel='cmyk')
 plot(scores[,1],scores[,2],t='n',xlab='PCA1',ylab='PCA2')
 
 points(scores[1:sum(num.per.source[1:num.sources]),1],scores[1:sum(num.per.source[1:num.sources]),2],col=label[1:sum(num.per.source[1:num.sources])],pch=21,bg=label[1:sum(num.per.source[1:num.sources])])
@@ -215,7 +215,7 @@ thin=10
 # total number of kept iterations
 niter=np*num.iters/thin
 
-output =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbert/julia',baseline=baseline,labels=baselabels)
+output =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)

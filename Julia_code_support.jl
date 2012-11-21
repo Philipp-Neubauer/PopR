@@ -1,6 +1,6 @@
 function preclass(consts,Stats,priors,allcounts,counts,class_id)
 
-    dists=Array(Float64,consts.sources)
+    dists=Array(Float,consts.sources)
     for i=1:consts.N
         
         for j=1:(consts.sources)
@@ -217,9 +217,9 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
 
  function update_prior(consts::STUD,K_plus,stats::NORM,counts,priors::MNIW)
 
-     muu = zeros(Float64,(D,K_plus))
+     muu = zeros(Float,(D,K_plus))
      sums=0
-     invsig = zeros(Float64,(D,D,K_plus))
+     invsig = zeros(Float,(D,D,K_plus))
      sumsig=0
      for k =1:K_plus
                 

@@ -7,8 +7,19 @@ numiters =int(ARGS[2])
 Typeof=ARGS[4]
 
 cd(ARGS[5])
- #cd( "/home/philbert/Papersampler")
-datas =dlmread("datas.csv",",",Float64)
+
+
+#cd( "C:/Users/Philipp/Work/Otolith_Code/HBM/DPMpaper/Papersampler")
+
+# define type alias for floats same as for Int
+
+if is(Int,Int)
+    typealias Float Float64
+else
+    typealias Float Float32
+end
+
+datas =dlmread("datas.csv",",",Float)
 global datas=datas[2:end,2:end]'
 
 (D, N) = size(datas)
@@ -17,18 +28,13 @@ global datas=datas[2:end,2:end]'
 # define structures for normal model####
 ########################################
 
-function unique{T}(A::AbstractArray{T}, sorted::Bool)
-    dd = Dict{T, Bool}()
-    for a in A dd[a] = true end
-    sorted? sort!(keys(dd)): keys(dd)
-end
 
 #if(Typeof=="N")
 
-    single_priors = dlmread("single_priors.csv",",",Float64)
+    single_priors = dlmread("single_priors.csv",",",Float)
     single_priors=single_priors[2:end,2]
     
-    matrix_priors = dlmread("matrix_priors.csv",",",Float64)
+    matrix_priors = dlmread("matrix_priors.csv",",",Float)
     matrix_priors=matrix_priors[2:end,2:end]
    
     # define normal set types
@@ -49,12 +55,12 @@ end
     # prior composite type
     type MNIW
         
-        a_0::Float64
-        b_0::Float64
-        k_0::Float64
-        v_0::Float64
-        mu_0::Array{Float64,1}
-        lambda_0::Array{Float64,2}
+        a_0::Float
+        b_0::Float
+        k_0::Float
+        v_0::Float
+        mu_0::Array{Float,1}
+        lambda_0::Array{Float,2}
         
     end
     
@@ -71,7 +77,7 @@ end
     end
     
      # set up NORM type stats
-    Stats=NORM(zeros(Float64,(D,N)),zeros(Float64,(D,D,N)),Array(Float64,(D,D,N)),Array(Float64,(N)))
+    Stats=NORM(zeros(Float,(D,N)),zeros(Float,(D,D,N)),Array(Float,(D,D,N)),Array(Float,(N)))
     
     # define how to access subsets of individuals
     
@@ -111,10 +117,10 @@ outs={}
 np = nprocs()
 nit=int(np*numiters/thin);
 
-class_ids=Array(Float64,(size(datas,2),nit))
-k_0s=Array(Float64,nit)
+class_ids=Array(Float,(size(datas,2),nit))
+k_0s=Array(Float,nit)
 K_record=Array(Int8,nit)
-alpha_record=Array(Float64,nit)
+alpha_record=Array(Float,nit)
 
 #################################################
 ######### --- RUN IT ----########################
