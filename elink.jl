@@ -5,7 +5,7 @@ else
     typealias Float Float32
 end
 
-function mean(a::Float)
+function mean(a::Number)
     a
 end
 
@@ -16,13 +16,13 @@ S = dlmread("class_ids.csv",",",Float)
 S=int(S[2:end,2:end])
 
     n=size(S,1)
-    Z=zeros(Any,n-1,3)
+    Z=zeros(Float,n-1,3)
     R=zeros(Float,n+n-1,n-1)
     R[1:n,1]=1:n # R indexes leafs and groups
     MID=1:n # MID indexes current groups
     
     
-    maxpair=zeros(Any,3,1)
+    maxpair=zeros(Int,3,1)
     
     meanDI=zeros(Float,n,n)
     for i=1:(n-1)

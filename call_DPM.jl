@@ -13,11 +13,11 @@ cd(ARGS[5])
 
 # define type alias for floats same as for Int
 
-if is(Int,Int64)
+#if is(Int,Int64)
     typealias Float Float64
-else
-    typealias Float Float32
-end
+#else
+#    typealias Float Float32
+#end
 
 datas =dlmread("datas.csv",",",Float)
 global datas=datas[2:end,2:end]'
