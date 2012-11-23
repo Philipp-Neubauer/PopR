@@ -284,6 +284,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 if o.==1 || o.==2                 
                     
                     sstats[o],likelihood[o] = getlik(consts,priors,sstats[o],y_k,n_S[o]-1,true,true)
+                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
                     setlik=setlik+likelihood[o]
                     continue                   
                 end
