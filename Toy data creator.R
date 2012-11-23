@@ -16,7 +16,7 @@ num.sources = 3  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-sep = 12 # separation of means
+sep =10 # separation of means
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,num.per.source*num.sources,num.elements)
@@ -58,7 +58,20 @@ v.0  = num.elements+1
 # number of sources. This changes when sources are not easily identifyable
 
 vars = 1 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
+# adjust prior by degrees of freedom to get the right expected value
 lambda.0 = diag(rep(vars*(v.0-num.elements),num.elements))
+
+# this bit does the 'adaptive' learning of 'reasonable' prior covariance.
+# first run the model using, naively, the cov of all the data
+lambda.0=var(data.DPM)
+# skip this part for the first run, then chack which source has the lowest determinant (this is an arbitrary criterion) and set lambda.0 to the covariance of that class
+for (k in sort(unique(apply(class.id[,burnin:niter],1,median)))){
+cat(det(cov(data.DPM[apply(class.id[,burnin:niter],1,median)==k,])),'\n')}
+
+# set the number after the == to the source with the lowest determinant
+lambda.0=var(data.DPM[apply(class.id[,burnin:niter],1,median)==1,])
+
+
 
 # certainty about the mean...keep it low in the example
 k.0  = 1
