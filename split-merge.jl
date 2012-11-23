@@ -22,8 +22,8 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
             n_S=ones(Int16,2,1) # keeps track of the number of items at each 'new-old' component
            
             sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
-                      
-            cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
+                       
+           cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
 
             cns = 0
             clik=0;cprod=1;setlik=0;likelihood=zeros(Float,(1,2))
@@ -59,8 +59,9 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
                 
                 if o.==1 || o.==2
                     
-                    setlik=setlik+p_under_prior_alone[ind[o]]
-                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
+                    sstats[o],slikelihood = getlik(consts,priors,sstats[o],y_k,n_S[o]-1,true,true)
+                    setlik=setlik+slikelihood
+                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o]-1,1)
                     continue
                 end
   
@@ -153,8 +154,8 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
                 # calculate individual set likelihoods
                 
                 if o.==1 || o.==2
-                    
-                    setlik=setlik+p_under_prior_alone[ind[o]]
+                    sstats[o],slikelihood = getlik(consts,priors,sstats[o],y_k,n_S[o]-1,true,true)
+                    setlik=setlik+slikelihood
                     sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
                     continue
                 end

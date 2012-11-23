@@ -12,11 +12,11 @@ source("convert_Z_to_phylo.R")
 
 #  multi-normal source distributions - in an ideal world...
 
-num.sources = 5  # 'true' number of sources
+num.sources = 3  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-sep = 7 # separation of means
+sep = 12 # separation of means
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,num.per.source*num.sources,num.elements)
@@ -40,8 +40,8 @@ dev.off()
 data.DPM = data-colMeans(data)
 
 # prior for gamma - a gamma(1,1) is reasonably broad,but wider priors usually don't make much of a difference
-a.0  = 1
-b.0  = 1
+a.0  = 0.1
+b.0  = 0.1
 
 #Inv-Wishart prior
 
@@ -57,16 +57,16 @@ v.0  = num.elements+1
 # this should not be very important i.e. the prior should not influence the
 # number of sources. This changes when sources are not easily identifyable
 
-vars = 0.11 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
-lambda.0 = diag(rep(vars,num.elements))
+vars = 1 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
+lambda.0 = diag(rep(vars*(v.0-num.elements),num.elements))
 
 # certainty about the mean...keep it low in the example
-k.0  = num.sources
+k.0  = 1
 # prior mean
 mu.0 = colMeans(data.DPM)
 
 # number of iterations per processor
-num.iters=2000
+num.iters=1000
 # numebr of parallel processing jobs
 np=1
 # thinning of the marcov chain
@@ -98,15 +98,12 @@ Z = elink.call(S,path.to.julia='/home/philbert/julia')$tree
 N=num.per.source*num.sources
 Zp <- as.phylogg(Z,num.per.source*num.sources,rep('o',N))
 
-pdf('./Plots/tree very easy example.pdf')
-plot.phylo(reorder(Zp, order = "c")
-           ,edge.color=c(rep(1,length(Zp$edge.length)-1),0)
-           ,tip.color=c(label,0)
-           ,type='f')
+#pdf('./Plots/tree very easy example.pdf')
+plot.phylo(reorder(Zp, order = "c"),edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
 #text(0.03,0,0)
 #text(-0.05,0,0.05)
 #axisPhylo()
-dev.off()
+#dev.off()
 
 pdf('./Plots/clustering very easy example.pdf')
 plot(hclust(dist(data.DPM)),labels=F)
