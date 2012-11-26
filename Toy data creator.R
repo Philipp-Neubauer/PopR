@@ -12,11 +12,11 @@ source("convert_Z_to_phylo.R")
 
 #  multi-normal source distributions - in an ideal world...
 
-num.sources = 3  # 'true' number of sources
+num.sources = 5  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-sep =10 # separation of means
+sep =5 # separation of means
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,num.per.source*num.sources,num.elements)
@@ -30,16 +30,16 @@ for (i in 1:num.sources){
 
 scores = princomp(data)$scores
 
-pdf('./Plots/very easy example.pdf',colormodel='cmyk')
+#pdf('PCAplot.pdf',colormodel='cmyk')
 plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2')
-dev.off()
+#dev.off()
 ##########################
 ### now use the DPM ######
 ##########################
 
 data.DPM = data-colMeans(data)
 
-# prior for gamma - a gamma(1,1) is reasonably broad,but wider priors usually don't make much of a difference
+# prior for gamma - a gamma(0.1,0.1) is reasonably broad,but wider priors usually don't make much of a difference
 a.0  = 0.1
 b.0  = 0.1
 
@@ -63,15 +63,17 @@ lambda.0 = diag(rep(vars*(v.0-num.elements),num.elements))
 
 # this bit does the 'adaptive' learning of 'reasonable' prior covariance.
 # first run the model using, naively, the cov of all the data
-lambda.0=var(data.DPM)
-# skip this part for the first run, then chack which source has the lowest determinant (this is an arbitrary criterion) and set lambda.0 to the covariance of that class
+lambda.0=cov(data.DPM)
+lambda.0 = lambda.0*(v.0-num.elements)
+
+# skip this part for the first run, then get the class.id object and check which source determinant (this is an arbitrary criterion) and set lambda.0 to the covariance of that class
 for (k in sort(unique(apply(class.id[,burnin:niter],1,median)))){
 cat(det(cov(data.DPM[apply(class.id[,burnin:niter],1,median)==k,])),'\n')}
 
-# set the number after the == to the source with the lowest determinant
-lambda.0=var(data.DPM[apply(class.id[,burnin:niter],1,median)==1,])
-
-
+# set the number after the == to the source with the most 'resonable' determinant
+lambda.0=var(data.DPM[apply(class.id[,burnin:niter],1,median)==3,])
+v.0  = num.elements+1
+lambda.0 = lambda.0*(v.0-num.elements)
 
 # certainty about the mean...keep it low in the example
 k.0  = 1
@@ -83,43 +85,64 @@ num.iters=1000
 # numebr of parallel processing jobs
 np=1
 # thinning of the marcov chain
-thin=2
+thin=1
 # total number of kept iterations
 niter=np*num.iters/thin
+burnin = 100  # number of (kept!) iterations to discard
 
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbert/julia')
+############## Run the sampler ##############
+
+# there will most likely be no output on the terminal in windows until the very end. 
+#this works better in Linux where progress is displayed continously
+output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
 # and just the number of sources per iteration
 classes = as.data.frame(output$K_record)
 
+############## Analyse output ###############
+
 # display the histogram of the number of sources
 
-burnin = 100  # number of (kept!) iterations to discard
 bins = (min(classes)-0.5):(max(classes)+0.5) # histogram bins
 
 pdf('./Plots/hist very  easy example.pdf',colormodel='cmyk')
 hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
 dev.off()
 
-
 # now create the exact linkage tree and display
 
 S=class.id[,burnin:niter]
-Z = elink.call(S,path.to.julia='/home/philbert/julia')$tree
+Z = elink.call(S)$tree
 N=num.per.source*num.sources
 Zp <- as.phylogg(Z,num.per.source*num.sources,rep('o',N))
 
 #pdf('./Plots/tree very easy example.pdf')
-plot.phylo(reorder(Zp, order = "c"),edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
+plot.phylo(reorder(Zp, order = "c"),edge.width=2,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
 #text(0.03,0,0)
 #text(-0.05,0,0.05)
 #axisPhylo()
 #dev.off()
 
-pdf('./Plots/clustering very easy example.pdf')
-plot(hclust(dist(data.DPM)),labels=F)
+hc = hclust(dist(data.DPM))
+hcp = as.phylo(hc)
+hcp$tip.label=rep('o',N)
+
+pdf('./Plots/clustering example.pdf')
+plot.phylo(reorder(hcp, order = "c"),edge.width=2,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
+dev.off()
+
+pdf('ahrder example.pdf',width=12, height=3,colormodel='cmyk')
+par(mfrow=c(1,4))
+par(mar=c(5,4,2,1)+0.1)
+plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2',pch=16)
+par(mar=c(1,1,1,1)+0.1)
+plot.phylo(reorder(hcp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length))),tip.color=c(label),type='f')
+par(mar=c(5,4,2,0)+0.1)
+hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
+par(mar=c(1,1,1,1)+0.1)
+plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
 dev.off()
 
 #### playing with the covariance shows the sensitivity to the prior
