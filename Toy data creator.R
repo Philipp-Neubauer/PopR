@@ -12,11 +12,11 @@ source("convert_Z_to_phylo.R")
 
 #  multi-normal source distributions - in an ideal world...
 
-num.sources = 5  # 'true' number of sources
+num.sources = 3  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-sep =5 # separation of means
+sep =15 # separation of means
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,num.per.source*num.sources,num.elements)
@@ -66,9 +66,9 @@ lambda.0 = diag(rep(vars*(v.0-num.elements),num.elements))
 lambda.0=cov(data.DPM)
 lambda.0 = lambda.0*(v.0-num.elements)
 
-# skip this part for the first run, then get the class.id object and check which source determinant (this is an arbitrary criterion) and set lambda.0 to the covariance of that class
+# skip this part for the first run, then get the class.id object and check which source's matrix trace/num.elements seems reasonable (this is an arbitrary criterion) and set lambda.0 to the covariance of that class
 for (k in sort(unique(apply(class.id[,burnin:niter],1,median)))){
-cat(det(cov(data.DPM[apply(class.id[,burnin:niter],1,median)==k,])),'\n')}
+cat(sum(diag(cov(data.DPM[apply(class.id[,burnin:niter],1,median)==k,]))),'\n')}
 
 # set the number after the == to the source with the most 'resonable' determinant
 lambda.0=var(data.DPM[apply(class.id[,burnin:niter],1,median)==3,])
@@ -107,9 +107,7 @@ classes = as.data.frame(output$K_record)
 
 bins = (min(classes)-0.5):(max(classes)+0.5) # histogram bins
 
-pdf('./Plots/hist very  easy example.pdf',colormodel='cmyk')
 hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
-dev.off()
 
 # now create the exact linkage tree and display
 
@@ -133,7 +131,7 @@ pdf('./Plots/clustering example.pdf')
 plot.phylo(reorder(hcp, order = "c"),edge.width=2,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
 dev.off()
 
-pdf('ahrder example.pdf',width=12, height=3,colormodel='cmyk')
+pdf('easy example.pdf',width=12, height=3,colormodel='cmyk')
 par(mfrow=c(1,4))
 par(mar=c(5,4,2,1)+0.1)
 plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2',pch=16)
@@ -180,14 +178,14 @@ for (i in 1:as){
 
 scores = princomp(data)$scores
 
-pdf('../easy example fix.pdf',colormodel='cmyk')
+#pdf('../easy example fix.pdf',colormodel='cmyk')
 plot(scores[,1],scores[,2],t='n',xlab='PCA1',ylab='PCA2')
 
 points(scores[1:sum(num.per.source[1:num.sources]),1],scores[1:sum(num.per.source[1:num.sources]),2],col=label[1:sum(num.per.source[1:num.sources])],pch=21,bg=label[1:sum(num.per.source[1:num.sources])])
 
 points(scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),1],scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),2],col=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)],pch=23,bg=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)])
 
-dev.off()
+#dev.off()
 
 
 ##########################
@@ -231,9 +229,16 @@ v.0  = num.elements+1
 # this should not be very important i.e. the prior should not influence the
 # number of sources. This changes when sources are not easily identifyable
 
-vars = 10 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
-lambda.0 = diag(rep(vars,num.elements))
+vars = by(baseline,baselabels,cov) # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
+var=0
+for (i in 1:num.sources){
+  var=var+sum(diag(vars[[i]]))/num.sources
+}
+lambda.0 = diag(rep(var/num.elements,num.elements))
 
+
+lambda.0 = lambda.0*10
+lambda.0 = lambda.0/100
 # certainty about the mean...keep it low in the example
 k.0  = 0.01
 # prior mean
@@ -260,9 +265,7 @@ classes = as.data.frame(output$K_record)
 burnin = 100  # number of (kept!) iterations to discard
 bins = (min(classes)-0.5):(max(classes)+0.5) # histogram bins
 
-pdf('./Plots/hist fix very  easy example.pdf',colormodel='cmyk')
 hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
-dev.off()
 
 # now create the exact linkage tree and display - for this one the first
 # num.sources leafs are the baseline
@@ -270,24 +273,43 @@ S.fix=class.id[,burnin:niter]
 for (i in num.sources:1){
 S.fix= rbind(rep(i,niter-burnin),S.fix)}
 
-Z = elink.call(S.fix,path.to.julia='/home/philbert/julia')$tree
+Z = elink.call(S.fix)$tree
 N=length(mixedlabels)
 Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
 
-pdf('./Plots/tree fix very easy example_var10.pdf')
+
 plot.phylo(reorder(Zp, order = "c")
            ,edge.color=c(rep(1,length(Zp$edge.length)-1),0)
            ,tip.color=c(1:num.sources,mixedlabels,0)
            ,type='f')
-#text(0.03,0,0)
-#text(-0.05,0,0.05)
-#axisPhylo()
+
+
+
+hc = hclust(dist(data.DPM))
+hcp = as.phylo(hc)
+hcp$tip.label=rep('o',N)
+
+
+pdf('fix simulation.pdf',width=5, height=5,colormodel='cmyk')
+par(mar=c(5,4,2,1)+0.1)
+plot(scores[,1],scores[,2],t='n',xlab='PCA1',ylab='PCA2')
+points(scores[1:sum(num.per.source[1:num.sources]),1],scores[1:sum(num.per.source[1:num.sources]),2],col=label[1:sum(num.per.source[1:num.sources])],pch=21,bg=label[1:sum(num.per.source[1:num.sources])])
+points(scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),1],scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),2],col=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)],pch=23,bg=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)])
 dev.off()
 
-pdf('./Plots/clustering very easy example.pdf')
-plot(hclust(dist(mixed)),labels=F)
+pdf('fix low var exxample.pdf',width=6, height=3,colormodel='cmyk')
+par(mfrow=c(1,2))
+par(mar=c(5,4,2,0)+0.1)
+hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
+par(mar=c(1,1,1,1)+0.1)
+plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(1:num.sources,mixedlabels,0),type='f')
 dev.off()
 
+# compare classification agaisnt lda
+# DPM classification success
+mean(apply(class.id[,burnin:niter],1,median)==mixedlabels)
 
-
+# lda classification succes
+baselda <- lda(baseline,baselabels)
+mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
 
