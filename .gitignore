@@ -12,3 +12,5 @@ labels.csv
 matrix_priors.csv
 single_priors.csv
 source_ids.csv
+linkages.csv
+class_ids.csv
