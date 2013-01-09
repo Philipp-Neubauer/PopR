@@ -245,7 +245,8 @@ k.0  = 0.01
 mu.0 = colMeans(baseline)
 
 # number of iterations per processor
-num.iters=10000
+num.iters=1000
+
 # numebr of parallel processing jobs
 np=1
 # thinning of the marcov chain
@@ -253,7 +254,8 @@ thin=10
 # total number of kept iterations
 niter=np*num.iters/thin
 
-output =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels)
+# if julia is not installed under linux, or moved to a different folder in wondows, the path to the executeable msut be provided, else the working directory is taken as default
+output =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbert/julia')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
@@ -297,7 +299,7 @@ points(scores[1:sum(num.per.source[1:num.sources]),1],scores[1:sum(num.per.sourc
 points(scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),1],scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),2],col=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)],pch=23,bg=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)])
 dev.off()
 
-pdf('fix low var exxample.pdf',width=6, height=3,colormodel='cmyk')
+pdf('fix low var example.pdf',width=6, height=3,colormodel='cmyk')
 par(mfrow=c(1,2))
 par(mar=c(5,4,2,0)+0.1)
 hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
@@ -305,7 +307,7 @@ par(mar=c(1,1,1,1)+0.1)
 plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(1:num.sources,mixedlabels,0),type='f')
 dev.off()
 
-# compare classification agaisnt lda
+# compare classification against lda
 # DPM classification success
 mean(apply(class.id[,burnin:niter],1,median)==mixedlabels)
 
@@ -313,3 +315,41 @@ mean(apply(class.id[,burnin:niter],1,median)==mixedlabels)
 baselda <- lda(baseline,baselabels)
 mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
 
+# compare against mixture models
+
+# conditional analysis
+cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbert/julia')
+
+cond.class.id = as.data.frame(cond.output$class_id)
+cc.fix=cond.class.id[,burnin:niter]
+for (i in num.sources:1){
+cc.fix= rbind(rep(i,niter-burnin),cc.fix)}
+
+Z = elink.call(cc.fix,path.to.julia='/home/philbert/julia')$tree
+N=length(mixedlabels)
+Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
+
+
+plot.phylo(reorder(Zp, order = "c")
+           ,edge.color=c(rep(1,length(Zp$edge.length)-1),0)
+           ,tip.color=c(1:num.sources,mixedlabels,0)
+           ,type='f')
+
+
+# unconditional analysis
+uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbert/julia')
+
+ucond.class.id = as.data.frame(uncond.output$class_id)
+uc.fix=ucond.class.id[,burnin:niter]
+for (i in num.sources:1){
+uc.fix= rbind(rep(i,niter-burnin),uc.fix)}
+
+Z = elink.call(uc.fix,path.to.julia='/home/philbert/julia')$tree
+N=length(mixedlabels)
+Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
+
+
+plot.phylo(reorder(Zp, order = "c")
+           ,edge.color=c(rep(1,length(Zp$edge.length)-1),0)
+           ,tip.color=c(1:num.sources,mixedlabels,0)
+           ,type='f')

@@ -273,3 +273,17 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
      return(k_0,mu_0[1:consts.D])
 
  end
+
+
+ # random dirchlet samples
+
+ function rdirichlet(a,n)
+
+    l=size(a,2)
+    x = Array(Float64,l,n)
+    for i=1:l
+        x[i,:] = randg(a[i],n)
+    end
+    x./repmat(sum(x,1),l,1)    
+
+end
