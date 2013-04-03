@@ -11,21 +11,17 @@
 
         # precompute student-T posterior predictive distribution constants
         consts = STUD(pc_max_ind,lgamma((1:pc_max_ind)/2),log(pi),log(1:pc_max_ind),D)
-        
-   
-  
-  
 
-   
-    # prior composite type
+
+ # prior composite type
     type MNIW
         
-        a_0
-        b_0
-        k_0
-        v_0
-        mu_0
-        lambda_0
+        a_0::Float
+        b_0::Float
+        k_0::Float
+        v_0::Float
+        mu_0::Array{Float,1}
+        lambda_0::Array{Float,2}
         
     end
     
@@ -72,6 +68,3 @@
     
     end
     
-#end
-
-

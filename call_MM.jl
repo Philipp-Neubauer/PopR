@@ -1,6 +1,6 @@
 # julia code main wrapper
 
-bl=int(ARGS[1])
+cond=int(ARGS[1])
 thin =int(ARGS[3])
 numiters =int(ARGS[2])
 
@@ -9,7 +9,7 @@ Typeof=ARGS[4]
 cd(ARGS[5])
 
 
-#d( "/home/philbert/Papersampler")
+#cd( "/home/philbert/Papersampler")
 
 # define type alias for floats same as for Int
 
@@ -39,17 +39,9 @@ global datas=datas[2:end,2:end]'
    
     # define normal set types
 
-    pc_max_ind=int(1e5)
+    pc_max_ind=int(1e5) 
     
-    if bl.==1
-    
-        load("fixtype.jl")
-
-    else
-
-        load("define_types.jl")
-      
-    end
+    load("fixtype.jl")   
  
 
 #################################################
@@ -61,35 +53,22 @@ np = nprocs()
 nit=int(np*numiters/thin);
 
 class_ids=Array(Float,(size(datas,2),nit))
-k_0s=Array(Float,nit)
-K_record=Array(Int8,nit)
-alpha_record=Array(Float,nit)
+props=Array(Float,(consts.sources,nit))
+probas=Array(Float,(size(datas,2),consts.sources))
+
 
 #################################################
 ######### --- RUN IT ----########################
 #################################################
 
-if bl.==1
-  
-   @everywhere load("DPM_sampler_fix.jl")
-   #@everywhere load("define_types.jl")
-   for n=1:np
+@everywhere load("MM_sampler.jl")
+#@everywhere load("define_types.jl")
+for n=1:np
 
-       push(outs,fetch(@spawn DPM_sampler_fix(numiters,thin,Stats,priors,consts)))
+    push(outs,fetch(@spawn MM_sampler(numiters,thin,cond,Stats,priors,consts)))
  
-   end
-   
-else
-
-   @everywhere load("DPM_sampler.jl")
-   # @everywhere load("define_types.jl")
-   for n=1:np
-    
-       push(outs,fetch(@spawn DPM_sampler(datas,numiters,thin,Stats,priors,consts)))
-
-   end
-   
 end
+
 
 # get outputs
 
@@ -98,9 +77,8 @@ n=0
     for i=1:length(outs)
         n=n+1
         class_ids[:,((n-1)*nit+1):((n-1)*nit+nit)] = outs[i][1]
-        k_0s[((n-1)*nit+1):((n-1)*nit+nit)] = outs[i][2]
-        K_record[((n-1)*nit+1):((n-1)*nit+nit)] =outs[i][3]
-        alpha_record[((n-1)*nit+1):((n-1)*nit+nit)] = outs[i][4]
+        props[:,((n-1)*nit+1):((n-1)*nit+nit)] = outs[i][2]
+        probas = outs[i][3]
     end
 
 #################################################
@@ -108,6 +86,5 @@ n=0
 #################################################
 
 csvwrite("source_ids.csv",class_ids)
-csvwrite("K_record.csv",K_record)
-csvwrite("gammas.csv",alpha_record)
-csvwrite("k_0s.csv",k_0s)
+csvwrite("proportions.csv",props)
+csvwrite("post_probas.csv",probas)

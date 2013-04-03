@@ -5,7 +5,7 @@ function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
     load("gibbs_crp.jl")
     load("split-merge.jl")
     
-   (D, N) = size(datas)
+    (D, N) = size(datas)
     
     alpha = 1
 
