@@ -7,6 +7,7 @@ require(ape)
 source("Julia_call_function.R")
 source("elink.call.R")
 source("convert_Z_to_phylo.R")
+source("prior_match.R")
 
 ## task 1 - estiamte correct number of sources without a baseline
 
@@ -16,7 +17,7 @@ num.sources = 5  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-sep = 7 # separation of means
+sep = 16 # separation of means
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,num.per.source*num.sources,num.elements)
@@ -30,18 +31,24 @@ for (i in 1:num.sources){
 
 scores = princomp(data)$scores
 
-pdf('./Plots/very easy example.pdf',colormodel='cmyk')
+#pdf('./Plots/very easy example.pdf',colormodel='cmyk')
 plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2')
-dev.off()
+#dev.off()
 ##########################
 ### now use the DPM ######
 ##########################
 
 data.DPM = data-colMeans(data)
 
+# get prior
+
+
+
 # prior for gamma - a gamma(1,1) is reasonably broad,but wider priors usually don't make much of a difference
-a.0  = 1
-b.0  = 1
+
+ab = get_prior_ab(num.per.source*num.sources,g='poisson',5)
+
+a.0 = ab[1];b.0 = ab[2]
 
 #Inv-Wishart prior
 
@@ -57,11 +64,11 @@ v.0  = num.elements+1
 # this should not be very important i.e. the prior should not influence the
 # number of sources. This changes when sources are not easily identifyable
 
-vars = 0.11 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
+vars = 1 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
 lambda.0 = diag(rep(vars,num.elements))
 
 # certainty about the mean...keep it low in the example
-k.0  = num.sources
+k.0  = 1
 # prior mean
 mu.0 = colMeans(data.DPM)
 
@@ -74,7 +81,7 @@ thin=2
 # total number of kept iterations
 niter=np*num.iters/thin
 
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbert/julia')
+output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbobsqp/Work/julia')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
