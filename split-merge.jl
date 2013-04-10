@@ -1,16 +1,20 @@
 function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
 
-        classids_temp = deepcopy(class_idd)
-        # choose individuals at random
-        ind = randi(N,2)
-        c_i = classids_temp[ind[1]]
-        c_j = classids_temp[ind[2]]
-        
-        n_i = sum(classids_temp.==c_i)
-        n_j = sum(classids_temp.==c_j)
-        
-        if c_i !=c_j
-            ## merge
+    classids_temp = deepcopy(class_idd)
+    # choose individuals at random
+    ind = rand(1:N,2)
+    while ind[1]==ind[2]
+        ind[2] = rand(1:N,1)[1]
+    end
+         
+    c_i = classids_temp[ind[1]]
+    c_j = classids_temp[ind[2]]
+    
+    n_i = sum(classids_temp.==c_i)
+    n_j = sum(classids_temp.==c_j)
+    
+    if c_i !=c_j
+        ## merge
             classids_temp[classids_temp.==c_i] = c_j# rename class_idd of ind[1] to that of ind[2]
             hits = classids_temp .>= c_i # get class_idds of id_s greater than the merged one
             classids_temp[hits] = classids_temp[hits]-1 # compact classids_temp
@@ -61,7 +65,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
                     
                     sstats[o],slikelihood = getlik(consts,priors,sstats[o],y_k,n_S[o]-1,true,true)
                     setlik=setlik+slikelihood
-                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o]-1,1)
+                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
                     continue
                 end
   

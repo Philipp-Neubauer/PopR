@@ -19,7 +19,7 @@ cd(ARGS[5])
 #    typealias Float Float32
 #end
 
-datas =dlmread("datas.csv",",",Float)
+datas =readdlm("datas.csv",",",Float)
 global datas=datas[2:end,2:end]'
 
 (D, N) = size(datas)
@@ -31,10 +31,10 @@ global datas=datas[2:end,2:end]'
 
 #if(Typeof=="N")
 
-    single_priors = dlmread("single_priors.csv",",",Float)
+    single_priors = readdlm("single_priors.csv",",",Float)
     single_priors=single_priors[2:end,2]
     
-    matrix_priors = dlmread("matrix_priors.csv",",",Float)
+    matrix_priors = readdlm("matrix_priors.csv",",",Float)
     matrix_priors=matrix_priors[2:end,2:end]
    
     # define normal set types
@@ -65,7 +65,7 @@ probas=Array(Float,(size(datas,2),consts.sources))
 #@everywhere load("define_types.jl")
 for n=1:np
 
-    push(outs,fetch(@spawn MM_sampler(numiters,thin,cond,Stats,priors,consts)))
+    push!(outs,fetch(@spawn MM_sampler(numiters,thin,cond,Stats,priors,consts)))
  
 end
 
@@ -85,6 +85,6 @@ n=0
 ######### --- Write out ----#####################
 #################################################
 
-csvwrite("source_ids.csv",class_ids)
-csvwrite("proportions.csv",props)
-csvwrite("post_probas.csv",probas)
+writecsv("source_ids.csv",class_ids)
+writecsv("proportions.csv",props)
+writecsv("post_probas.csv",probas)

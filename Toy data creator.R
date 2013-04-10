@@ -17,11 +17,8 @@ num.sources = 3  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-<<<<<<< HEAD
-sep = 16 # separation of means
-=======
-sep =15 # separation of means
->>>>>>> a4665ede12c16c096296f68f5fdd51e5a51dfedd
+sep = 25 # separation of means
+
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,num.per.source*num.sources,num.elements)
@@ -34,12 +31,7 @@ for (i in 1:num.sources){
 }
 
 scores = princomp(data)$scores
-
-<<<<<<< HEAD
-#pdf('./Plots/very easy example.pdf',colormodel='cmyk')
-=======
 #pdf('PCAplot.pdf',colormodel='cmyk')
->>>>>>> a4665ede12c16c096296f68f5fdd51e5a51dfedd
 plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2')
 #dev.off()
 ##########################
@@ -48,21 +40,12 @@ plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2')
 
 data.DPM = data-colMeans(data)
 
-<<<<<<< HEAD
-# get prior
+# prior for gamma
 
+ab = get_prior_ab(num.per.source*num.sources,'poisson',3)
 
-
-# prior for gamma - a gamma(1,1) is reasonably broad,but wider priors usually don't make much of a difference
-
-ab = get_prior_ab(num.per.source*num.sources,g='poisson',5)
-
-a.0 = ab[1];b.0 = ab[2]
-=======
-# prior for gamma - a gamma(0.1,0.1) is reasonably broad,but wider priors usually don't make much of a difference
-a.0  = 0.1
-b.0  = 0.1
->>>>>>> a4665ede12c16c096296f68f5fdd51e5a51dfedd
+a.0 = ab[[1]]
+b.0 = ab[[2]]
 
 #Inv-Wishart prior
 
@@ -78,31 +61,13 @@ v.0  = num.elements+1
 # this should not be very important i.e. the prior should not influence the
 # number of sources. This changes when sources are not easily identifyable
 
-vars = 1 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
-<<<<<<< HEAD
-lambda.0 = diag(rep(vars,num.elements))
-=======
+vars = 10 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
 # adjust prior by degrees of freedom to get the right expected value
 lambda.0 = diag(rep(vars*(v.0-num.elements),num.elements))
 
-# this bit does the 'adaptive' learning of 'reasonable' prior covariance.
-# first run the model using, naively, the cov of all the data
-lambda.0=cov(data.DPM)
-lambda.0 = lambda.0*(v.0-num.elements)
-
-# skip this part for the first run, then get the class.id object and check which source's matrix trace/num.elements seems reasonable (this is an arbitrary criterion) and set lambda.0 to the covariance of that class
-for (k in sort(unique(apply(class.id[,burnin:niter],1,median)))){
-cat(sum(diag(cov(data.DPM[apply(class.id[,burnin:niter],1,median)==k,]))),'\n')}
-
-# set the number after the == to the source with the most 'resonable' determinant
-lambda.0=var(data.DPM[apply(class.id[,burnin:niter],1,median)==3,])
-v.0  = num.elements+1
-lambda.0 = lambda.0*(v.0-num.elements)
->>>>>>> a4665ede12c16c096296f68f5fdd51e5a51dfedd
-
-# certainty about the mean...keep it low in the example
+# initial value for certainty about the mean...keep it low in the example
 k.0  = 1
-# prior mean
+# initial value for prior mean
 mu.0 = colMeans(data.DPM)
 
 # number of iterations per processor
@@ -111,19 +76,17 @@ num.iters=1000
 np=1
 # thinning of the marcov chain
 thin=1
+
 # total number of kept iterations
 niter=np*num.iters/thin
 burnin = 100  # number of (kept!) iterations to discard
 
 ############## Run the sampler ##############
 
-<<<<<<< HEAD
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbobsqp/Work/julia')
-=======
 # there will most likely be no output on the terminal in windows until the very end. 
 #this works better in Linux where progress is displayed continously
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np)
->>>>>>> a4665ede12c16c096296f68f5fdd51e5a51dfedd
+
+output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbobsqp/Work/julia')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
@@ -141,7 +104,7 @@ hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',fr
 # now create the exact linkage tree and display
 
 S=class.id[,burnin:niter]
-Z = elink.call(S)$tree
+Z = elink.call(S, path.to.julia='/home/philbobsqp/Work/julia')$tree
 N=num.per.source*num.sources
 Zp <- as.phylogg(Z,num.per.source*num.sources,rep('o',N))
 
@@ -151,6 +114,7 @@ plot.phylo(reorder(Zp, order = "c"),edge.width=2,cex=1.5,edge.color=c(rep(1,leng
 #text(-0.05,0,0.05)
 #axisPhylo()
 #dev.off()
+
 
 hc = hclust(dist(data.DPM))
 hcp = as.phylo(hc)

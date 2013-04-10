@@ -1,6 +1,6 @@
 function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
 
-    load("Julia_code_support.jl")
+    require("Julia_code_support.jl")
 
     # initialize structures
 
@@ -78,7 +78,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
 
        # update source proportions/priors
 
-       prop = rdirichlet(counts'+1/consts.sources,1)
+       prop = rand(Dirichlet(counts'+1/consts.sources))
        
         # save parameter values
         

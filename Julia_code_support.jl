@@ -1,3 +1,5 @@
+using Distributions
+
 function preclass(consts,Stats,priors,allcounts,counts,class_id)
 
     dists=Array(Float,consts.sources)
@@ -164,14 +166,14 @@ function disptime(total_time,time_1_iter,iter,thin,num_iters,K_record)
 
 total_time = total_time + time_1_iter
     if iter.==1
-       println(strcat("Iter: ",dec(iter),"/",dec(num_iters)))
+       println(string("Iter: ",dec(iter),"/",dec(num_iters)))
     elseif mod(iter,thin*5).==0
         E_K_plus = mean(K_record[1:int(iter/thin)])
         rem_time = (time_1_iter*.05 + 0.95*(total_time/iter))*num_iters-total_time
         if rem_time < 0
             rem_time = 0
         end
-        println(strcat("Iter: ",dec(iter),'/',dec(num_iters),", Rem. Time: ", secs2hmsstr(rem_time),", mean[K^+]",string(E_K_plus)))
+        println(string("Iter: ",dec(iter),'/',dec(num_iters),", Rem. Time: ", secs2hmsstr(rem_time),", mean[K^+]",string(E_K_plus)))
     end
 
     return(total_time)
@@ -191,11 +193,11 @@ rem = rem - minutes*60
 secs = ifloor(rem)
 
     if days .== 0
-        str =  strcat(dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
+        str =  string(dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
    elseif days .==1
-        str = strcat( "1 Day + ",dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
+        str = string( "1 Day + ",dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
     else
-        str = strcat( dec(days),"days:",dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
+        str = string(dec(days),"days:",dec(hours),"h:",dec(minutes),"min:",dec(secs),"sec")
 end
 
 end
@@ -205,11 +207,11 @@ end
 
 function update_alpha(alpha,N,K_plus,a_0,b_0)
 
- g_alpha = randg(alpha+1)/2
- g_N = randg(N)/2
+ g_alpha = rand(Gamma(alpha+1))/2
+ g_N = rand(Gamma(N))/2
  nu = g_alpha/(g_alpha+g_N)
  pis=(a_0+K_plus-1)/(a_0+K_plus-1+N*(b_0-log(nu)))
- alpha = (pis*(randg(a_0+K_plus)/(b_0-log(nu))))+((1-pis)*(randg(a_0+K_plus-1)/(b_0-log(nu))))
+ alpha = (pis*(rand(Gamma(a_0+K_plus))/(b_0-log(nu))))+((1-pis)*(rand(Gamma(a_0+K_plus-1))/(b_0-log(nu))))
 
  end
 
@@ -268,22 +270,8 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
          sums += (muu[:,k]-mu_0)'*invsig[:,:,k]*(muu[:,k]-mu_0)
      end
      
-     k_0 = randg((K_plus+1)/2)*((1/(sums)+1)/2)[1]
-     #println(mu_0)
-     return(k_0,mu_0[1:consts.D])
+     k_0 = rand(Gamma((K_plus+1)/2))*((1/(sums)+1)/2)[1]
+    
+     return(k_0,mu_0[:,1])
 
  end
-
-
- # random dirchlet samples
-
- function rdirichlet(a,n)
-
-    l=size(a,2)
-    x = Array(Float64,l,n)
-    for i=1:l
-        x[i,:] = randg(a[i],n)
-    end
-    x./repmat(sum(x,1),l,1)    
-
-end

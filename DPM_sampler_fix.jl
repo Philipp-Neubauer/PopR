@@ -1,8 +1,8 @@
 function  DPM_sampler_fix(num_iters,thin,Stats,priors,consts)
 
-    load("Julia_code_support.jl")
-    load("gibbs_crp_fix.jl")
-    load("split-merge_fix.jl")
+    require("Julia_code_support.jl")
+    require("gibbs_crp_fix.jl")
+    require("split-merge_fix.jl")
 
      alpha = 1
 

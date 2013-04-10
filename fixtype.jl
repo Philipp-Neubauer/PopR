@@ -1,7 +1,10 @@
-  baseline =dlmread("baseline.csv",",",Float)
+import Base.getindex
+import Base.setindex!
+
+baseline =readdlm("baseline.csv",",",Float)
         global baseline=baseline[2:end,2:end]'
 
-        label = dlmread("labels.csv",",",Float)
+        label = readdlm("labels.csv",",",Float)
         label = label[2:end,2]
         label=int(label)  
         
@@ -18,7 +21,7 @@ end
             labels[label.==uniqs[i]]=i
         end
 
-        type STUD
+        immutable STUD
             datas::Array{Float,2}
             baseline::Array{Float,2}
             orgsum_squares::Array{Float,3}
@@ -69,7 +72,7 @@ end
     
     # define how to access subsets of individuals
     
-    function ref(A::NORM,k::Any)
+    function getindex(A::NORM,k::Any)
 
         NORM(A.means[:,k],A.sum_squares[:,:,k],A.inv_cov[:,:,k],A.log_det_cov[k])
             
@@ -77,7 +80,7 @@ end
 
      # define how to assign subsets of individuals
     
-    function assign(A::NORM,B::NORM,k::Any)
+    function setindex!(A::NORM,B::NORM,k::Any)
 
         A.means[:,k]=B.means
         A.sum_squares[:,:,k] = B.sum_squares
@@ -86,7 +89,7 @@ end
     
     end
 
-    function assign(A::NORM,B::Number,k::Any)
+    function setindex!(A::NORM,B::Number,k::Any)
 
         A.means[:,k]=B
         A.sum_squares[:,:,k] = B

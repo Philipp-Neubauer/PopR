@@ -2,7 +2,11 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
 
     classids_temp = deepcopy(class_idd)
     # choose individuals at random
-    ind = randi(consts.N,2)
+     ind = rand(1:consts.N,2)
+    while ind[1]==ind[2]
+        ind[2] = rand(1:consts.N,1)[1]
+    end
+    
     c_i = classids_temp[ind[1]]
     c_j = classids_temp[ind[2]]
         

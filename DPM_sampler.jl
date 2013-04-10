@@ -1,9 +1,9 @@
 function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
 
     #load("define_types.jl")
-    load("Julia_code_support.jl")
-    load("gibbs_crp.jl")
-    load("split-merge.jl")
+    require("Julia_code_support.jl")
+    require("gibbs_crp.jl")
+    require("split-merge.jl")
     
     (D, N) = size(datas)
     
@@ -49,7 +49,7 @@ function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
         
         # run split-merge bit
         
-        if iter>10
+       if iter>10
             (class_id,K_plus,Stats,counts) = split_merge(datas,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
          end
          
@@ -64,7 +64,7 @@ function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
         alpha = update_alpha(alpha,N,K_plus,priors.a_0,priors.b_0)
 
         # update prior
-        
+
         (priors.k_0,priors.mu_0) = update_prior(consts,K_plus,Stats,counts,priors)
         
         # save parameter values

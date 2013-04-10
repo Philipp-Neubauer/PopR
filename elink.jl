@@ -1,9 +1,9 @@
 
-if is(Int,Int64)
+#if is(Int,Int64)
     typealias Float Float64
-else
-    typealias Float Float32
-end
+#else
+#    typealias Float Float32
+#end
 
 function mean(a::Number)
     a
@@ -12,7 +12,7 @@ end
 wd=(ARGS[1])
 cd(wd)
 
-S = dlmread("class_ids.csv",",",Float)
+S = readdlm("class_ids.csv",",",Float)
 S=int(S[2:end,2:end])
 
     n=size(S,1)
@@ -27,7 +27,7 @@ S=int(S[2:end,2:end])
     meanDI=zeros(Float,n,n)
     for i=1:(n-1)
         for j=(i+1):n
-            meanDI[i,j]=mean(int(S[j,:].==S[i,:]))
+            meanDI[i,j]=mean(int(S[j,:].==S[i,:])[1])
             meanDI[j,i]=meanDI[i,j]
             if meanDI[i,j]>maxpair[3]
                 maxpair=[i j meanDI[i,j]]
@@ -64,7 +64,7 @@ S=int(S[2:end,2:end])
             for y=1:length(allnode)
                 for z=1:length(nodes)
                     
-                    temp = mean(mean(int(S[allnode[y],:].==S[nodes[z],:])))
+                    temp = mean(mean(int(S[allnode[y],:].==S[nodes[z],:])[1]))
                     
                     if temp<DIC[o]
                         DIC[o]=temp
@@ -99,7 +99,7 @@ S=int(S[2:end,2:end])
 
         R[n+s,1:(length(newgr1)+length(newgr2))]=[newgr1 newgr2]
 
-        sorts=sort([ro coll])
+        sorts=sort([ro,coll])
         meanDI = meanDI[[1:(sorts[2]-1), (sorts[2]+1):end],:]
         meanDI = meanDI[[1:(sorts[1]-1), (sorts[1]+1):end],:]
         meanDI = meanDI[:,[1:(sorts[2]-1), (sorts[2]+1):end]]
@@ -111,4 +111,4 @@ S=int(S[2:end,2:end])
             
         end
 
-csvwrite("linkages.csv",Z)
+writecsv("linkages.csv",Z)

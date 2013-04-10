@@ -19,7 +19,8 @@ cd(ARGS[5])
 #    typealias Float Float32
 #end
 
-datas =dlmread("datas.csv",",",Float)
+
+datas =readdlm("datas.csv",",",Float)
 global datas=datas[2:end,2:end]'
 
 (D, N) = size(datas)
@@ -31,10 +32,10 @@ global datas=datas[2:end,2:end]'
 
 #if(Typeof=="N")
 
-    single_priors = dlmread("single_priors.csv",",",Float)
+    single_priors = readdlm("single_priors.csv",",",Float)
     single_priors=single_priors[2:end,2]
     
-    matrix_priors = dlmread("matrix_priors.csv",",",Float)
+    matrix_priors = readdlm("matrix_priors.csv",",",Float)
     matrix_priors=matrix_priors[2:end,2:end]
    
     # define normal set types
@@ -43,11 +44,12 @@ global datas=datas[2:end,2:end]'
     
     if bl.==1
     
-        load("fixtype.jl")
+        require("fixtype.jl")
 
     else
 
-        load("define_types.jl")
+
+require("define_types.jl")
       
     end
  
@@ -71,21 +73,21 @@ alpha_record=Array(Float,nit)
 
 if bl.==1
   
-   @everywhere load("DPM_sampler_fix.jl")
+   @everywhere require("DPM_sampler_fix.jl")
    #@everywhere load("define_types.jl")
    for n=1:np
 
-       push(outs,fetch(@spawn DPM_sampler_fix(numiters,thin,Stats,priors,consts)))
+       push!(outs,fetch(@spawn DPM_sampler_fix(numiters,thin,Stats,priors,consts)))
  
    end
    
 else
 
-   @everywhere load("DPM_sampler.jl")
-   # @everywhere load("define_types.jl")
+   @everywhere require("DPM_sampler.jl")
+   # @everywhere require("define_types.jl")
    for n=1:np
     
-       push(outs,fetch(@spawn DPM_sampler(datas,numiters,thin,Stats,priors,consts)))
+       push!(outs,fetch(@spawn DPM_sampler(datas,numiters,thin,Stats,priors,consts)))
 
    end
    
@@ -107,7 +109,7 @@ n=0
 ######### --- Write out ----#####################
 #################################################
 
-csvwrite("source_ids.csv",class_ids)
-csvwrite("K_record.csv",K_record)
-csvwrite("gammas.csv",alpha_record)
-csvwrite("k_0s.csv",k_0s)
+writecsv("source_ids.csv",class_ids)
+writecsv("K_record.csv",K_record)
+writecsv("gammas.csv",alpha_record)
+writecsv("k_0s.csv",k_0s)
