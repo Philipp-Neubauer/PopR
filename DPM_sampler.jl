@@ -49,9 +49,9 @@ function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
         
         # run split-merge bit
         
-       if iter>10
-            (class_id,K_plus,Stats,counts) = split_merge(datas,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
-         end
+      # if iter>10
+        #    (class_id,K_plus,Stats,counts) = split_merge(datas,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
+       #  end
          
         # run gibbs bit      
       

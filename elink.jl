@@ -27,7 +27,7 @@ S=int(S[2:end,2:end])
     meanDI=zeros(Float,n,n)
     for i=1:(n-1)
         for j=(i+1):n
-            meanDI[i,j]=mean(int(S[j,:].==S[i,:])[1])
+            meanDI[i,j]=sum(int(S[j,:].==S[i,:]))/length(int(S[j,:].==S[i,:]))
             meanDI[j,i]=meanDI[i,j]
             if meanDI[i,j]>maxpair[3]
                 maxpair=[i j meanDI[i,j]]
@@ -64,7 +64,7 @@ S=int(S[2:end,2:end])
             for y=1:length(allnode)
                 for z=1:length(nodes)
                     
-                    temp = mean(mean(int(S[allnode[y],:].==S[nodes[z],:])[1]))
+                    temp = mean(sum(int(S[allnode[y],:].==S[nodes[z],:]))/length(int(S[allnode[y],:].==S[nodes[z],:])))
                     
                     if temp<DIC[o]
                         DIC[o]=temp

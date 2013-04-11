@@ -17,7 +17,7 @@ num.sources = 3  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-sep = 25 # separation of means
+sep = 24 # separation of means
 
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
@@ -42,11 +42,12 @@ data.DPM = data-colMeans(data)
 
 # prior for gamma
 
-ab = get_prior_ab(num.per.source*num.sources,'poisson',3)
+ab = get_prior_ab(num.per.source*num.sources)
 
 a.0 = ab[[1]]
 b.0 = ab[[2]]
-
+a.0
+b.0
 #Inv-Wishart prior
 
 # degrees of freedom - at least num.elements+1
@@ -61,7 +62,7 @@ v.0  = num.elements+1
 # this should not be very important i.e. the prior should not influence the
 # number of sources. This changes when sources are not easily identifyable
 
-vars = 10 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
+vars = 0.0001 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
 # adjust prior by degrees of freedom to get the right expected value
 lambda.0 = diag(rep(vars*(v.0-num.elements),num.elements))
 
