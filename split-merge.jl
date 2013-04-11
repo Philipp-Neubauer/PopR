@@ -27,7 +27,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
            
             sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
                        
-           cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
+           cstats = NORM( zeros(Float,D),zeros(Float,D,D),zeros(Float,D,D),zeros(Float))
 
             cns = 0
             clik=0;cprod=1;setlik=0;likelihood=zeros(Float,(1,2))
@@ -126,7 +126,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
            
             sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
                       
-            cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
+            cstats = NORM( zeros(Float,D),zeros(Float,D,D),zeros(Float,D,D),zeros(Float))
             
             cmeans = zeros(Float,(D,1))
             csums = zeros(Float,(D,D))

@@ -117,19 +117,27 @@ function getlik(consts::STUD,priors::MNIW,Stats::NORM,y,n,lik::Bool,suffs::Bool)
 
     if suffs
 
-        Stats.log_det_cov =  log(det(Sigma))
-        Stats.inv_cov  = inv(Sigma)
-
-        if lik
+        Stats.inv_cov  = cholfact(Sigma)[:U]
+        Stats.log_det_cov = sum(log(diag(Stats.inv_cov)))
         
-            lp = (consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - .5*Stats.log_det_cov-(vd/2)*log(1+(1/v)*(y-mu)'*Stats.inv_cov*(y-mu)))[1]
-
+        if lik
+            u = y-mu
+#print(u,'\n')
+            
+            z = Cholesky(Stats.inv_cov,'U') \ u  # This is equivalent to inv(cov) * u, but much faster
+           # print(z,'\n')
+            lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - Stats.log_det_cov-(vd/2)*log(1+(1/v)*dot(u,z))
+                  
             return Stats,lp
         else
             return Stats
         end
     else
-        lp = (consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - .5*Stats.log_det_cov-(vd/2)*log(1+(1/v)*(y-mu)'*Stats.inv_cov*(y-mu)))[1]
+
+         u = y-mu
+         z = Cholesky(Stats.inv_cov,'U') \ u  # This is equivalent to inv(cov) * u, but much faster
+                 
+        lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - Stats.log_det_cov-(vd/2)*log(1+(1/v)*dot(u,z))
     
         return lp
     end
@@ -144,16 +152,18 @@ function p_for_1(consts::STUD,priors::MNIW,N,datas,p_under_prior_alone)
  Sigma = (priors.lambda_0*(priors.k_0+1)/(priors.k_0*(priors.v_0-consts.D+1)))'
     v = priors.v_0-consts.D+1
     mu = priors.mu_0
-    log_det_Sigma = log(det(Sigma))
-    inv_Sigma = Sigma^-1
+ inv_Sigma = cholfact(Sigma)
+    log_det_Sigma =sum(log(diag( inv_Sigma[:U])))
+   
     vd = v+consts.D
     d2=consts.D/2
     for i=1:N
         y = datas[:,i]
-              
-        lp =consts.pc_gammaln_by_2[vd] - ( consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] +  d2*consts.pc_log_pi) -.5*log_det_Sigma- (vd/2)*log(1+(1/v)*(y-mu)'*inv_Sigma*(y-mu))
+               u = y-mu
+z = inv_Sigma \ u
+          lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - log_det_Sigma-(vd/2)*log(1+(1/v)*dot(u,z))
         
-        p_under_prior_alone[i] = lp[1]
+        p_under_prior_alone[i] = lp
 
     end
 
@@ -167,7 +177,7 @@ function disptime(total_time,time_1_iter,iter,thin,num_iters,K_record)
 total_time = total_time + time_1_iter
     if iter.==1
        println(string("Iter: ",dec(iter),"/",dec(num_iters)))
-    elseif mod(iter,thin*5).==0
+    elseif mod(iter,thin*100).==0
         E_K_plus = mean(K_record[1:int(iter/thin)])
         rem_time = (time_1_iter*.05 + 0.95*(total_time/iter))*num_iters-total_time
         if rem_time < 0
