@@ -1,34 +1,24 @@
+function elink(S)
 
-#if is(Int,Int64)
-    typealias Float Float64
-#else
-#    typealias Float Float32
-#end
-
-function mean(a::Number)
-    a
-end
-
-wd=(ARGS[1])
-cd(wd)
-
-S = readdlm("class_ids.csv",",",Float)
-S=int(S[2:end,2:end])
-
-    n=size(S,1)
-    Z=zeros(Float,n-1,3)
-    R=zeros(Float,n+n-1,n-1)
+    (n,niter)=size(S)
+    
+    Z=zeros(Float64,n-1,3)
+    R=zeros(Float64,n+n-1,n-1)
     R[1:n,1]=1:n # R indexes leafs and groups
     MID=1:n # MID indexes current groups
-    
+    print(string("%|"))
     
     maxpair=zeros(Int,3,1)
     
-    meanDI=zeros(Float,n,n)
+    meanDI=zeros(Float64,n,n)
+   
     for i=1:(n-1)
-        for j=(i+1):n
-            meanDI[i,j]=sum(int(S[j,:].==S[i,:]))/length(int(S[j,:].==S[i,:]))
-            meanDI[j,i]=meanDI[i,j]
+        for j=(i+1):n          
+            sums=0
+            for k=1:niter
+                sums = sums+(S[j,k]==S[i,k])
+            end
+            meanDI[i,j]=meanDI[j,i]=sums/niter
             if meanDI[i,j]>maxpair[3]
                 maxpair=[i j meanDI[i,j]]
             end
@@ -49,13 +39,15 @@ S=int(S[2:end,2:end])
 
     
     for s = 2:(n-1)
+     
+      
         
         an1=int(R[int(Z[s-1,1]),find(R[int(Z[s-1,1]),:].!=0)])
         an2=int(R[int(Z[s-1,2]),find(R[int(Z[s-1,2]),:].!=0)])
         allnode = [an1 an2] #just merged nodes
         MID = [MID, n+(s-1)] #new group
-        meanDI=[meanDI zeros(Float,(n-s),1)]  # add a column of zeros
-        meanDI=[meanDI;zeros(Float,1,(n-s)+1)]# add a row of zeros for new group
+        meanDI=[meanDI zeros(Float64,(n-s),1)]  # add a column of zeros
+        meanDI=[meanDI;zeros(Float64,1,(n-s)+1)]# add a row of zeros for new group
         
         DIC=ones(n-s,1)
         
@@ -63,8 +55,11 @@ S=int(S[2:end,2:end])
             nodes=int(R[MID[o],find(R[MID[o],:].!=0)]) # nodes that make up group MID(o)
             for y=1:length(allnode)
                 for z=1:length(nodes)
-                    
-                    temp = mean(sum(int(S[allnode[y],:].==S[nodes[z],:]))/length(int(S[allnode[y],:].==S[nodes[z],:])))
+                    sums=0
+                    for k=1:niter
+                        sums = sums+int(S[allnode[y],k]==S[nodes[z],k])
+                    end
+                    temp = sums/niter
                     
                     if temp<DIC[o]
                         DIC[o]=temp
@@ -91,7 +86,7 @@ S=int(S[2:end,2:end])
             
         newgr1=R[MID[ro],find(R[MID[ro],:].!=0)]
         newgr2=R[MID[coll],find(R[MID[coll],:].!=0)]
-            
+        
         
         if s.==(n-1)
             break
@@ -107,8 +102,23 @@ S=int(S[2:end,2:end])
         
         MID= MID[[1:(sorts[2]-1), (sorts[2]+1):end]]
         MID= MID[[1:(sorts[1]-1), (sorts[1]+1):end]]
-           
-            
+        
+        #print(string(round(s/(n-1)*100),"% done"))
+        #print(string("0%|","*"^int(round(s/(n-1)*35))," "^(35-int(round(s/(n-1)*35))),"|100% done"))
+        print(string(*))
         end
+        print(string("Done"))
+        return(Z)
+
+end
+
+wd=(ARGS[1])
+cd(wd)
+
+S = readdlm("class_ids.csv",",",Float64)
+S=int(S[2:end,2:end])
+
+#elink(S[1:5,1:1])
+Z=elink(S)
 
 writecsv("linkages.csv",Z)

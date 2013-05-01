@@ -8,50 +8,54 @@ source("Julia_call_function.R")
 source("elink.call.R")
 source("convert_Z_to_phylo.R")
 source("prior_match.R")
-
+setwd("/home/philbobsqp/Work//Projects/Papersampler")
 ## task 1 - estiamte correct number of sources without a baseline
 
 #  multi-normal source distributions - in an ideal world...
 
-num.sources = 3  # 'true' number of sources
-num.elements = 5 # number of elements
-num.per.source = 30 # individuals per source
+num.sources = 5  # 'true' number of sources
+num.elements = 8 # number of elements
+num.per.source = 20 # individuals per source
 
-sep = 24 # separation of means
+sep = 10 # separation of means
 
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
-data=matrix(NA,num.per.source*num.sources,num.elements)
+datas=matrix(NA,num.per.source*num.sources,num.elements)
 label=rep(NA,num.per.source*num.sources)
 a=0
 for (i in 1:num.sources){
-    data[(a*num.per.source+1):(a*num.per.source+num.per.source),] <-mvrnorm(num.per.source,means[i,],diag(rep(1,num.elements)))
+    datas[(a*num.per.source+1):(a*num.per.source+num.per.source),] <-mvrnorm(num.per.source,means[i,],diag(rep(1,num.elements)))
     label[(a*num.per.source+1):(a*num.per.source+num.per.source)] <- i
     a=a+1
 }
-
-scores = princomp(data)$scores
+label=sort(rep(1:num.sources,num.per.source))
+scores = princomp(datas,label)$scores
 #pdf('PCAplot.pdf',colormodel='cmyk')
-plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2')
+plot(scores[,1],scores[,2],col=label,xlab='LD1',ylab='LD2')
 #dev.off()
 ##########################
 ### now use the DPM ######
 ##########################
 
-data.DPM = data-colMeans(data)
+data.DPM = t(apply(datas,1,function(x){x-colMeans(datas)}))
 
-# prior for gamma
+# prior for gamma - set to uninformative following Dorazio 2009
+n=num.per.source*num.sources
 
-ab = get_prior_ab(num.per.source*num.sources)
+# defaults to uniform prior, can take a vector or probability mass, or arguments poisson, negbin,norm,lnorm, tha last 4 have parameters mu and var/rate
+ab = get_prior_ab(n,"poisson",5)
+
 
 a.0 = ab[[1]]
 b.0 = ab[[2]]
-a.0
+a.0 
 b.0
+
 #Inv-Wishart prior
 
 # degrees of freedom - at least num.elements+1
-# higher v.0 equates to a more informative prior
+# higher v.0 equate to a more informative prior
 v.0  = num.elements+1
 
 # prior covariance - try a number of options - this shows how sensitive the
@@ -62,30 +66,38 @@ v.0  = num.elements+1
 # this should not be very important i.e. the prior should not influence the
 # number of sources. This changes when sources are not easily identifyable
 
-vars = 0.0001 # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
-# adjust prior by degrees of freedom to get the right expected value
+vars = 1 # 
+#adjust prior by degrees of freedom to get the right expected value
 lambda.0 = diag(rep(vars*(v.0-num.elements),num.elements))
 
-# initial value for certainty about the mean...keep it low in the example
+# prior mean for k_0 is ak.0*bk.0
+ak.0 = 1
+bk.0 = 1
+
+ak.0*bk.0
+
+# initial value for certainty about the mean...
 k.0  = 1
 # initial value for prior mean
 mu.0 = colMeans(data.DPM)
 
 # number of iterations per processor
 num.iters=1000
-# numebr of parallel processing jobs
-np=1
 # thinning of the marcov chain
 thin=1
 
+# number of parallel processes (chains) to run (recommended to keep at <= core of CPU) set to np + 1 since one instance only calls and summarizes the work...
+np=4+1
+
 # total number of kept iterations
-niter=np*num.iters/thin
+niter=(np-1)*num.iters/thin
 burnin = 100  # number of (kept!) iterations to discard
+
 
 ############## Run the sampler ##############
 
 # there will most likely be no output on the terminal in windows until the very end. 
-#this works better in Linux where progress is displayed continously
+#this works better in Linux where progress is displayed continously - K^+ is the estimated number of sources
 
 output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbobsqp/Work/julia')
 
@@ -94,11 +106,17 @@ class.id = as.data.frame(output$class_id)
 # and just the number of sources per iteration
 classes = as.data.frame(output$K_record)
 
+
 ############## Analyse output ###############
+
+# check if the markov chain for number of sources has converged and is mixing:
+plot(classes[burnin:niter,1]) # number of sources
+plot(output$alpha_record[burnin:niter,1]) #concentration parameter 
+plot(output$k_0[burnin:niter,1]) # prior k_0
 
 # display the histogram of the number of sources
 
-bins = (min(classes)-0.5):(max(classes)+0.5) # histogram bins
+bins = (min(classes[burnin:niter,1])-0.5):(max(classes[burnin:niter,1])+0.5) # histogram bins
 
 hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
 
@@ -106,14 +124,10 @@ hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',fr
 
 S=class.id[,burnin:niter]
 Z = elink.call(S, path.to.julia='/home/philbobsqp/Work/julia')$tree
-N=num.per.source*num.sources
-Zp <- as.phylogg(Z,num.per.source*num.sources,rep('o',N))
+Zp <- as.phylogg(Z,n,rep('o',n))
 
 #pdf('./Plots/tree very easy example.pdf')
 plot.phylo(reorder(Zp, order = "c"),edge.width=2,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
-#text(0.03,0,0)
-#text(-0.05,0,0.05)
-#axisPhylo()
 #dev.off()
 
 
@@ -125,10 +139,10 @@ pdf('./Plots/clustering example.pdf')
 plot.phylo(reorder(hcp, order = "c"),edge.width=2,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(label,0),type='f')
 dev.off()
 
-pdf('easy example.pdf',width=12, height=3,colormodel='cmyk')
+pdf('hardest5 example.pdf',width=12, height=3,colormodel='cmyk')
 par(mfrow=c(1,4))
 par(mar=c(5,4,2,1)+0.1)
-plot(scores[,1],scores[,2],col=label,xlab='PCA1',ylab='PCA2',pch=16)
+plot(scores[,1],scores[,2],col=label,xlab='LD1',ylab='LD2')
 par(mar=c(1,1,1,1)+0.1)
 plot.phylo(reorder(hcp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length))),tip.color=c(label),type='f')
 par(mar=c(5,4,2,0)+0.1)
@@ -172,14 +186,14 @@ for (i in 1:as){
 
 scores = princomp(data)$scores
 
-#pdf('../easy example fix.pdf',colormodel='cmyk')
+pdf('../easy example fix.pdf',colormodel='cmyk')
 plot(scores[,1],scores[,2],t='n',xlab='PCA1',ylab='PCA2')
 
 points(scores[1:sum(num.per.source[1:num.sources]),1],scores[1:sum(num.per.source[1:num.sources]),2],col=label[1:sum(num.per.source[1:num.sources])],pch=21,bg=label[1:sum(num.per.source[1:num.sources])])
 
 points(scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),1],scores[(sum(num.per.source[1:num.sources])+1):sum(num.per.source),2],col=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)],pch=23,bg=label[(sum(num.per.source[1:num.sources])+1):sum(num.per.source)])
 
-#dev.off()
+dev.off()
 
 
 ##########################
@@ -201,13 +215,18 @@ bix=bix[-ixs]
 mixedlabels=label[c(ixs,(sum(num.per.source[1:num.sources])+1):sum(num.per.source))]
 baselabels = label[bix]
 
-mixed =  mixed-colMeans(baseline)
-baseline = baseline-colMeans(baseline)
+mixed = t(apply(mixed,1,function(x){x-colMeans(baseline)}))
+baseline = t(apply(baseline,1,function(x){x-colMeans(baseline)}))
 
 
-# prior for gamma - a gamma(1,1) is reasonably broad,but wider priors usually don't make much of a difference
-a.0  = 1
-b.0  = 1
+# prior for gamma - set to uninformative following Dorazio 2009
+n=sum(num.per.source[(num.sources+1):(num.sources+extra.sources)])
+ab = get_prior_ab(n,'norm',14,1)
+
+a.0 = ab[[1]]
+b.0 = ab[[2]]
+a.0
+b.0
 
 #Inv-Wishart prior
 
@@ -226,40 +245,48 @@ v.0  = num.elements+1
 vars = by(baseline,baselabels,cov) # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
 var=0
 for (i in 1:num.sources){
-  var=var+sum(diag(vars[[i]]))/num.sources
+  var=var+(1/num.sources)*solve(vars[[i]])
 }
-lambda.0 = diag(rep(var/num.elements,num.elements))
+lambda.0 = solve(var)
+#lambda.0=diag(0.01,num.elements)
 
-
-lambda.0 = lambda.0*10
-lambda.0 = lambda.0/100
-# certainty about the mean...keep it low in the example
-k.0  = 0.01
+# prior for k_0 - small values are uninformative, but may lead to very poor mixing and numerical instability.
+ak.0 = 1
+bk.0 = 1
+# initial k_0...
+k.0  = 1
 # prior mean
 mu.0 = colMeans(baseline)
 
 # number of iterations per processor
-num.iters=1000
+num.iters=2000
 
-# numebr of parallel processing jobs
-np=1
+# numebr of parallel processing jobs - set to a max of number of cores of the CPU+1(the +1 just calls the cumputing instances)
+np=2+1
 # thinning of the marcov chain
-thin=10
-# total number of kept iterations
-niter=np*num.iters/thin
+thin=2
+burnin = 100  # number of (kept!) iterations to discard
 
-# if julia is not installed under linux, or moved to a different folder in wondows, the path to the executeable msut be provided, else the working directory is taken as default
-output =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbert/julia')
+# total number of kept iterations
+niter=(np-1)*num.iters/thin
+
+# if julia is not installed and in the path, or is moved to a different directory, the path to the executeable must be provided, else the working directory is taken as default
+output =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
 # and just the number of sources per iteration
 classes = as.data.frame(output$K_record)
 
+# check if the markov chain for number of sources has converged and is mixing:
+plot(classes[burnin:niter,1]) # number of sources
+plot(output$alpha_record[burnin:niter,1]) #concentration parameter 
+plot(output$k_0[burnin:niter,1]) # prior k_0
+
 # display the histogram of the number of sources
 
 burnin = 100  # number of (kept!) iterations to discard
-bins = (min(classes)-0.5):(max(classes)+0.5) # histogram bins
+bins = (min(classes[burnin:niter,1])-0.5):(max(classes[burnin:niter,1])+0.5) # histogram bins
 
 hist(classes[burnin:niter,1],bins,col='grey',xlab='number of sources',main='',freq=F)
 
@@ -269,15 +296,12 @@ S.fix=class.id[,burnin:niter]
 for (i in num.sources:1){
 S.fix= rbind(rep(i,niter-burnin),S.fix)}
 
-Z = elink.call(S.fix)$tree
+Z2 = elink.call(S.fix,'/home/philbobsqp/Work/julia')$tree
 N=length(mixedlabels)
-Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
+Zp <- as.phylogg(Z2,N+num.sources,c(rep('X',num.sources),rep('o',N)))
 
 
-plot.phylo(reorder(Zp, order = "c")
-           ,edge.color=c(rep(1,length(Zp$edge.length)-1),0)
-           ,tip.color=c(1:num.sources,mixedlabels,0)
-           ,type='f')
+plot.phylo(reorder(Zp, order = "c"),edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(1:num.sources,mixedlabels,0),type='f')
 
 
 
@@ -301,10 +325,6 @@ par(mar=c(1,1,1,1)+0.1)
 plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(1:num.sources,mixedlabels,0),type='f')
 dev.off()
 
-# compare classification against lda
-# DPM classification success
-mean(apply(class.id[,burnin:niter],1,median)==mixedlabels)
-
 # lda classification succes
 baselda <- lda(baseline,baselabels)
 mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
@@ -312,14 +332,14 @@ mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
 # compare against mixture models
 
 # conditional analysis
-cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbert/julia')
+cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
 
 cond.class.id = as.data.frame(cond.output$class_id)
 cc.fix=cond.class.id[,burnin:niter]
 for (i in num.sources:1){
 cc.fix= rbind(rep(i,niter-burnin),cc.fix)}
 
-Z = elink.call(cc.fix,path.to.julia='/home/philbert/julia')$tree
+Z = elink.call(cc.fix,path.to.julia='/home/philbobsqp/Work/julia')$tree
 N=length(mixedlabels)
 Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
 
@@ -331,14 +351,14 @@ plot.phylo(reorder(Zp, order = "c")
 
 
 # unconditional analysis
-uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbert/julia')
+uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
 
 ucond.class.id = as.data.frame(uncond.output$class_id)
 uc.fix=ucond.class.id[,burnin:niter]
 for (i in num.sources:1){
 uc.fix= rbind(rep(i,niter-burnin),uc.fix)}
 
-Z = elink.call(uc.fix,path.to.julia='/home/philbert/julia')$tree
+Z = elink.call(uc.fix,path.to.julia='/home/philbobsqp/Work/julia')$tree
 N=length(mixedlabels)
 Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
 

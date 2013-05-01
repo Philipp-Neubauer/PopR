@@ -1,5 +1,5 @@
 # julia code main wrapper
-
+using Distributions
 cond=int(ARGS[1])
 thin =int(ARGS[3])
 numiters =int(ARGS[2])
@@ -41,7 +41,7 @@ global datas=datas[2:end,2:end]'
 
     pc_max_ind=int(1e5) 
     
-    load("fixtype.jl")   
+    require("fixtype.jl")   
  
 
 #################################################
@@ -61,7 +61,7 @@ probas=Array(Float,(size(datas,2),consts.sources))
 ######### --- RUN IT ----########################
 #################################################
 
-@everywhere load("MM_sampler.jl")
+@everywhere require("MM_sampler.jl")
 #@everywhere load("define_types.jl")
 for n=1:np
 

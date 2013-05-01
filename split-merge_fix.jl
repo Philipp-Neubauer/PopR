@@ -1,6 +1,6 @@
 function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha,p_under_prior_alone)
 
-    classids_temp = deepcopy(class_idd)
+   classids_temp = copy(class_idd)
     # choose individuals at random
      ind = rand(1:consts.N,2)
     while ind[1]==ind[2]
@@ -50,7 +50,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
            
         sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
                       
-        cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
+        cstats = NORM( zeros(Float,D),zeros(Float,D,D),zeros(Float,D,D),zeros(Float))
 
         if c_i<=consts.sources || c_j<=consts.sources
 
@@ -124,8 +124,8 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
         ixxs = find(idxar)
         ixxs=[ind[1]; ind[2]; ixxs]
 
-        classhelp = ones(Int16,length(ixxs))
-        classhelp[class_idd[ixxs].==c_i]=2
+        classhelp = ones(Int,length(ixxs))
+        classhelp[class_idd[ixxs].==c_j]=2
             
         for o = n_i+n_j>2 ? [cnt, randperm(n_i+n_j-2)+2] : cnt
                 
@@ -145,10 +145,10 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
             # calculate individual set likelihoods
                 
             if o.==1 || o.==2
-
-                sstats[o],likelihood[o] = getlik(consts,priors,sstats[o],y_k,n_S[o]-1,true,true)
+#println(sstats[classhelp[o]])
+                sstats[classhelp[o]],likelihood[o] = getlik(consts,priors,sstats[classhelp[o]],y_k,n_S[o]-1,true,true)
                 setlik=setlik+likelihood[o]
-                sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
+                sstats[classhelp[o]] = update_Stats(sstats[classhelp[o]],y_k,n_S[o],1)
                 continue
             end
             
@@ -238,7 +238,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
            
         sstats = NORM(zeros(Float,D,2),zeros(Float,D,D,2),zeros(Float,D,D,2),zeros(Float,2))
         
-        cstats = NORM( zeros(Float,D,1),zeros(Float,D,D),zeros(Float,D,D),zeros(Float,1))
+        cstats = NORM( zeros(Float,D),zeros(Float,D,D),zeros(Float,D,D),zeros(Float))
 
         if c_i<=consts.sources
                     
@@ -353,7 +353,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 Stats[K_plus+1] = getlik(consts,priors,sstats[2],0,allcounts[K_plus+1],false,true)
                 
                 K_plus=K_plus+1
-                class_idd=copy(classids_temp)
+                class_idd=classids_temp
             end
             
         end

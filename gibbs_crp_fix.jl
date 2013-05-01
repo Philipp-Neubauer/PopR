@@ -2,11 +2,11 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
 
     # take this out later !!!!
     #class_idd=class_id
-    class_idd_old=deepcopy(class_idd)
-    Stats_old = deepcopy(Stats)
-    counts_old=deepcopy(counts)
-    allcounts_old=deepcopy(allcounts)
-    K_plus_old=deepcopy(K_plus)
+  #  class_idd_old=deepcopy(class_idd)
+  #  Stats_old = deepcopy(Stats)
+  #  counts_old=deepcopy(counts)
+  #  allcounts_old=deepcopy(allcounts)
+  #  K_plus_old=deepcopy(K_plus)
     
     for i=1:consts.N
     
@@ -77,10 +77,10 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
         
         likelihood[K_plus_temp+1] = p_under_prior_alone[i]
 
-        if !all((likelihood.>=0.0) | (likelihood.<=0.0))
+      #  if !all((likelihood.>=0.0) | (likelihood.<=0.0))
         #println(likelihood)
-            return(class_idd_old,K_plus_old,Stats_old,counts_old,allcounts_old)
-        end
+      #      return(class_idd_old,K_plus_old,Stats_old,counts_old,allcounts_old)
+     #   end
         
         likelihood = exp(likelihood-max(likelihood))
 

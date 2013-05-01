@@ -1,6 +1,6 @@
 function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
 
-    classids_temp = deepcopy(class_idd)
+    classids_temp = copy(class_idd)
     # choose individuals at random
     ind = rand(1:N,2)
     while ind[1]==ind[2]
@@ -50,7 +50,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
                 
                 # calculate the combined likelihood
                 
-                y_k = datas[:,k]
+                y_k = data[:,k]
 
                 cstats,clikelihood = getlik(consts,priors,cstats,y_k,cns,true,true)
                 
@@ -63,9 +63,9 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
                 
                 if o.==1 || o.==2
                     
-                    sstats[o],slikelihood = getlik(consts,priors,sstats[o],y_k,n_S[o]-1,true,true)
+                    sstats[classhelp[o]],slikelihood = getlik(consts,priors,sstats[classhelp[o]],y_k,n_S[o]-1,true,true)
                     setlik=setlik+slikelihood
-                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
+                    sstats[classhelp[o]] = update_Stats(sstats[classhelp[o]],y_k,n_S[o],1)
                     continue
                 end
   
@@ -92,9 +92,9 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
             M_H_prior = exp(lgamma(n_j+n_i)-(lgamma(n_S[1])+lgamma(n_S[2])))/alpha
             M_H_Lik =exp(clik-setlik)
             M_H_rat = M_H_prior*(M_H_Lik)*cprod
-            
+            #println("tried merge")
             if rand().<M_H_rat # accept ?
-                #println("accept merge")
+               # println("accept merge")
                 # first update suff-stats of new merged group
                 
                 counts[c_j] = n_i + n_j
@@ -146,7 +146,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
                 k=ixxs[o]
                 
                 # calculate the combined likelihood
-                y_k = datas[:,k]
+                y_k = data[:,k]
                 
                 cstats,clikelihood = getlik(consts,priors,cstats,y_k,cns,true,true)
                 
@@ -199,7 +199,8 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
             M_H_prior = exp((lgamma(n_S[1])+lgamma(n_S[2]))-lgamma(n_j))*alpha
             M_H_Lik = exp(setlik-clik)
             M_H_rat = M_H_prior*(M_H_Lik)*(1/cprod)
-            
+       #println(M_H_rat)
+            #println("tried split")
             if rand().<M_H_rat #&& any(classids_temp!=class_idd) # accept ?
                 # println("accept split")
                 # first update suff-stats of new groups
@@ -210,7 +211,7 @@ function split_merge(data,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alph
                 Stats[K_plus+1] = getlik(consts,priors,sstats[1],0,counts[K_plus+1],false,true)
                 
                 K_plus=K_plus+1
-                class_idd=copy(classids_temp)
+                class_idd=classids_temp
             end
             
         end

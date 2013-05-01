@@ -1,12 +1,14 @@
 function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
 
+    
+    
     require("Julia_code_support.jl")
 
     # initialize structures
 
     nit=int(num_iters/thin)
    
-    counts = zeros(Int,consts.sources,1)
+    counts = zeros(Int,consts.sources)
     allcounts = zeros(Int,consts.sources,1)
     class_id = Array(Int,consts.N)
     prop = ones(Float,consts.sources)
@@ -38,7 +40,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
     
     ## start MCMC ---- 
     for iter=1:num_iters
-    
+    #println(iter)
         for i=1:consts.N
 
         if iter>1
@@ -55,7 +57,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
                         Stats[j] = update_Stats(Stats[j],consts.datas[:,i],allcounts[j],-1)
                     end
                     
-                    predlik[j,i] = getlik(consts,priors,Stats[j],consts.datas[:,i],allcounts[j],true,false)
+                    (dum,predlik[j,i]) = getlik(consts,priors,Stats[j],consts.datas[:,i],allcounts[j],true,true)
                   
                 end
                                
@@ -78,7 +80,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
 
        # update source proportions/priors
 
-       prop = rand(Dirichlet(counts'+1/consts.sources))
+       prop = rand(Dirichlet((counts+1/consts.sources)))
        
         # save parameter values
         
@@ -91,12 +93,11 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
         # timer
 
         time_1_iter = toq();
-        totaltime = disptime(totaltime,time_1_iter,iter,thin,num_iters,-sum(props.*log(props),1))
+        #println(prop)
+        totaltime = disptime(totaltime,time_1_iter,iter,thin,num_iters, -sum(props[:,1:int(iter/thin)].*log(props[:,1:int(iter/thin)]),1))
         tic()
         
     end
-
-    
 
     return(class_ids,props,reshape(mean(probas,3),consts.N,consts.sources))
 

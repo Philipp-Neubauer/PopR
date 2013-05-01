@@ -1,13 +1,24 @@
-function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
+function  DPM_sampler(inp::Array{Any,1})
 
+datas = inp[1]
+num_iters = inp[2]
+thin = inp[3]
+Stats = inp[4]
+priors = inp[5]
+consts = inp[6]
+    
+    #const (D, N) = size(datas)
+    #const pc_max_ind=int(1e4)
+
+    
     #load("define_types.jl")
     require("Julia_code_support.jl")
     require("gibbs_crp.jl")
     require("split-merge.jl")
+      
+   
     
-    (D, N) = size(datas)
-    
-    alpha = 1
+    alpha = 10
 
     # initialize structures
 
@@ -47,18 +58,15 @@ function  DPM_sampler(datas,num_iters,thin,Stats,priors,consts)
         # calculate P for each individual under prior alone
         p_under_prior_alone = p_for_1(consts,priors,N,datas,p_under_prior_alone)
         
-        # run split-merge bit
-        
-      # if iter>10
-        #    (class_id,K_plus,Stats,counts) = split_merge(datas,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
-       #  end
-         
-        # run gibbs bit      
-      
+    # if iter==1 || mod(iter,10)==0
         (class_id,K_plus,Stats,counts) = crp_gibbs(datas,iter,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
-
-        # assert(all(round((Stats.means)*counts/90,4) .==round( mean(datas,2),4)))
-
+    # end
+        
+          # run split-merge bit
+     #   if iter<(num_iters/10)
+        (class_id,K_plus,Stats,counts) = split_merge(datas,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
+       # end
+         
         # update alpha
 
         alpha = update_alpha(alpha,N,K_plus,priors.a_0,priors.b_0)

@@ -28,9 +28,9 @@ function preclass(consts,Stats,priors,allcounts,counts,class_id)
         lambda_n = priors.lambda_0 + SS + priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
         Sigma = lambda_n*(k_n+1)/(k_n*(v_n-consts.D+1))
     
-        Stats.log_det_cov[choose] = log(det(Sigma))
-        Stats.inv_cov[:,:,choose] = inv(Sigma)
-    
+        Stats.inv_cov[:,:,choose] = cholfact(Sigma)[:U]
+      
+        Stats.log_det_cov[choose] = sum(log(diag(Stats[choose].inv_cov)))    
     end
 
     return (Stats,allcounts,counts)
@@ -41,7 +41,7 @@ end
 
 function preallocate(consts,Stats,priors,allcounts)
 
-    is=unique(consts.labels,true);
+    is=sort(unique(consts.labels));
 
    for i=1:consts.sources
     
@@ -58,29 +58,23 @@ function preallocate(consts,Stats,priors,allcounts)
         n = size(consts.baseline[:,consts.labels.==is[i]],2)
         k_n = priors.k_0+n
         v_n = priors.v_0+n
-    
+   
         zm_Y = Stats.means[:,i]-priors.mu_0
         SS = Stats.sum_squares[:,:,i]-n*(Stats.means[:,i]*Stats.means[:,i]')
         lambda_n = priors.lambda_0 + SS +  priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
         Sigma = lambda_n*(k_n+1)/(k_n*(v_n-consts.D+1))
     
-        Stats.log_det_cov[i] = log(det(Sigma))
-        consts.orglog_det_cov[i] =  Stats.log_det_cov[i]
-        Stats.inv_cov[:,:,i] = inv(Sigma)
+        Stats.inv_cov[:,:,i] = cholfact(Sigma)[:U]
         consts.orginv_cov[:,:,i] =  Stats.inv_cov[:,:,i]
+        Stats.log_det_cov[i] = sum(log(diag(Stats[i].inv_cov)))
+        consts.orglog_det_cov[i] =  Stats.log_det_cov[i]
     end
 
     return(consts,Stats,allcounts)
 
 end
 
-#unique
 
-function unique{T}(A::AbstractArray{T}, sorted::Bool)
-    dd = Dict{T, Bool}()
-    for a in A dd[a] = true end
-    sorted? sort!(keys(dd)): keys(dd)
-end
 
 # update statistics Normal case
 
@@ -101,11 +95,11 @@ end
 function getlik(consts::STUD,priors::MNIW,Stats::NORM,y,n,lik::Bool,suffs::Bool)
          
     m_Y = Stats.means
-    mu = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*m_Y
+    mu = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*Stats.means
     k_n = priors.k_0+n
     v_n = priors.v_0+n
 
-    S = (Stats.sum_squares - n*m_Y*m_Y')
+    S = (Stats.sum_squares - n* Stats.means*Stats.means')
     zm_Y = m_Y-priors.mu_0
     lambda_n = priors.lambda_0 + S  +  priors.k_0*n/(priors.k_0+n)*zm_Y*zm_Y'
 
@@ -115,6 +109,8 @@ function getlik(consts::STUD,priors::MNIW,Stats::NORM,y,n,lik::Bool,suffs::Bool)
     vd = v+consts.D
     d2 = consts.D/2
 
+#println(Sigma)
+    
     if suffs
 
         Stats.inv_cov  = cholfact(Sigma)[:U]
@@ -122,9 +118,10 @@ function getlik(consts::STUD,priors::MNIW,Stats::NORM,y,n,lik::Bool,suffs::Bool)
         
         if lik
             u = y-mu
-#print(u,'\n')
+#println(u)
             
             z = Cholesky(Stats.inv_cov,'U') \ u  # This is equivalent to inv(cov) * u, but much faster
+            #println(z)
            # print(z,'\n')
             lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - Stats.log_det_cov-(vd/2)*log(1+(1/v)*dot(u,z))
                   
@@ -152,6 +149,7 @@ function p_for_1(consts::STUD,priors::MNIW,N,datas,p_under_prior_alone)
  Sigma = (priors.lambda_0*(priors.k_0+1)/(priors.k_0*(priors.v_0-consts.D+1)))'
     v = priors.v_0-consts.D+1
     mu = priors.mu_0
+    #println(Sigma)
  inv_Sigma = cholfact(Sigma)
     log_det_Sigma =sum(log(diag( inv_Sigma[:U])))
    
@@ -178,7 +176,7 @@ total_time = total_time + time_1_iter
     if iter.==1
        println(string("Iter: ",dec(iter),"/",dec(num_iters)))
     elseif mod(iter,thin*100).==0
-        E_K_plus = mean(K_record[1:int(iter/thin)])
+        E_K_plus = round(mean(K_record[1:int(iter/thin)]),2)
         rem_time = (time_1_iter*.05 + 0.95*(total_time/iter))*num_iters-total_time
         if rem_time < 0
             rem_time = 0
@@ -217,9 +215,7 @@ end
 
 function update_alpha(alpha,N,K_plus,a_0,b_0)
 
- g_alpha = rand(Gamma(alpha+1))/2
- g_N = rand(Gamma(N))/2
- nu = g_alpha/(g_alpha+g_N)
+ nu = rand(Beta(alpha+1,N))
  pis=(a_0+K_plus-1)/(a_0+K_plus-1+N*(b_0-log(nu)))
  alpha = (pis*(rand(Gamma(a_0+K_plus))/(b_0-log(nu))))+((1-pis)*(rand(Gamma(a_0+K_plus-1))/(b_0-log(nu))))
 
@@ -231,37 +227,35 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
 
      muu = zeros(Float,(D,K_plus))
      sums=0
-     invsig = zeros(Float,(D,D,K_plus))
+     sig = zeros(Float,(D,D,K_plus))
+     invsig= zeros(Float,(D,D,K_plus))
      sumsig=0
+     #print(priors.k_0,'\n')
      for k =1:K_plus
                 
-         m_Y = stats.means[:,k]
+       
          n=counts[k]
-         mu_n = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*m_Y
-         SS = (stats.sum_squares[:,:,k] - n*(m_Y*m_Y'))
-         zm_Y = m_Y-priors.mu_0
+         mu_n = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*stats.means[:,k]
+         SS = (stats.sum_squares[:,:,k] - n*(stats.means[:,k]*stats.means[:,k]'))
+         zm_Y = stats.means[:,k]-priors.mu_0
          lambda_n = priors.lambda_0 + SS + priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
                 
          v_n=priors.v_0+n
 
-         #simualte from wishard
-         for i = 1:v_n
-             try
-                 A = chol(lambda_n)*randn(consts.D)
-             catch
-                 return(priors.k_0,priors.mu_0)
-             end
-         
-             
-             invsig[:,:,k] += A*A'
+         try
+             sig[:,:,k] = rand(InverseWishart(v_n,lambda_n))
+
+         catch
+             return(priors.k_0,priors.mu_0)
          end
-                
+     
          # simulate from mvnorm
-         A = chol(inv(invsig[:,:,k])/(priors.k_0+n))
+         A = chol(sig[:,:,k]/(priors.k_0+n))
          zs = randn(consts.D)
          
          muu[:,k]=mu_n+A*zs              
          #println( muu[:,k])
+         invsig[:,:,k] = inv(sig[:,:,k])
          sums += invsig[:,:,k]*muu[:,k]
          sumsig += invsig[:,:,k]
      end
@@ -277,11 +271,15 @@ function update_alpha(alpha,N,K_plus,a_0,b_0)
      sums=0
      for k=1:K_plus
          
-         sums += (muu[:,k]-mu_0)'*invsig[:,:,k]*(muu[:,k]-mu_0)
+         sums += (muu[:,k]-mu_0)'*(invsig[:,:,k])*(muu[:,k]-mu_0)
      end
+
+     #print(inv(invsig[:,:,1]),'\n')
      
-     k_0 = rand(Gamma((K_plus+1)/2))*((1/(sums)+1)/2)[1]
-    
+     k_0 = rand(Gamma((K_plus+priors.ak_0)/2))*((sums+priors.bk_0)/2)[1]
+    #println(k_0)
      return(k_0,mu_0[:,1])
 
  end
+
+

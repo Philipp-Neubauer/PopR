@@ -1,39 +1,46 @@
-get_prior_ab <- function(n,g='uniform',pars=NULL){
-  
+get_prior_ab <- function(n,g='uniform',mu=NULL,var=NULL){
+  if (!is.numeric(g)){
   if(g=='uniform'){
     g <- rep(1/n,n)
   } else if (g=='poisson') {
-    g <- dpois(1:n,pars)
+    g <- dpois(1:n,mu)
   } else if (g=='negbin') {
-    g <- dnbinom(1:n,pars)
+    g <- dnbinom(1:n,mu,var)
+  } else if (g=='lnorm') {
+    g <- dlnorm(1:n,mu,var)
+  } else if (g=='norm'){
+    g <- dnorm(1:n,mu,var)
+  } else {stop('Distribution need to be one of the following: uniform (default),poisson,negbin,lnorm,norm')}
+}
+g=g/sum(g)
+
+s_recursive <- function(n,k,s_rec) {
+    if(k==1 & n==1){
+        return(1)}else if(k==1){return(  -(n-1)*s_rec[n-1,k])
+        }else{ 
+      return(s_rec[n-1,k-1] - (n-1)*s_rec[n-1,k])
+    }
   }
+
+  # get stirling numbers
+  snk = matrix(,n,n);
+  for (i in 1:n){
+    for (j in 1:(i)){
+      if (i==j) snk[i,j] =1 else snk[i,j] = (s_recursive(i,j,snk) )
+    }
+}
+snk=abs(snk)
   
-#   s_nk <- function(n,k){
-#     
-#     kt=0;
-#     for(m in 0:(n-k))  {
-#       rt = 0
-#       for (j in 0:m) rt=rt+(((-1)^j*j^(n-k+m))/(factorial(j)*factorial(m-j)))
-#       kt <- kt + (1/((n+m)*factorial(n-k-m)*factorial(n-k+m)))*rt
-#     }
-#     return((factorial(2*n-k)/factorial(k-1))*kt)
-#   }
-#   
-#   snk <- matrix(,n,n)
-#   for (i in 1:n){
-#     for (j in 1:i){
-#       snk[i,j]<-abs(s_nk(i,j))
-#     }
-#   }
-  
+  # KL distance
   KL_dist <- function(par,others){
-    # integral 
+    
     a <-par[1]
     b <-par[2]
     n <- others$n
     g <- others$g
-    #snk <- others$snk
+    snk <- others$snk
     
+    #integral
     pi_fun <- function(alpha,otros){
       a <-otros$a
       b <-otros$b
@@ -43,34 +50,47 @@ get_prior_ab <- function(n,g='uniform',pars=NULL){
       
     }
     
-    KL = 0
+    KL = 0;pi_k=vector(,n)
     for (k in 1:n){
       nint <- integrate(pi_fun,lower=0,upper=Inf,otros=list(a=a,b=b,k=k,n=n),stop.on.error =F,abs.tol=0.)$value
-      #nint <- quadgr(pi_fun,0,Inf,otros=list(a=a,b=b,k=k,n=n),tol=0.)$value
-      pi_k <- ((b^a)/gamma(a))*nint
-      KL <- KL + g[k]*log(g[k]/pi_k)
-      #KL <- KL +log(pi_k)
-      #cat(log(pi_k),'\n')
+      pi_k[k] <- ((b^a*snk[n,k])/gamma(a))*nint
+      
     }
-    #KL <- -log(n)-KL/n 
+    #pi_k=pi_k/sum(pi_k)
+    KL <- sum(g*log(g/pi_k))
+   # cat(KL,'\n')
+  
     return(KL)
   }
   
-  res <- optim(par=c(0.47,0.006),KL_dist,others=list(n=n,g=g),lower=c(1E-3,1E-4),upper=c(100,100),method='L-BFGS-B')  
+  res <- optim(par=c(0.5,0.5),KL_dist,others=list(n=n,g=g,snk=snk),lower=c(1E-3,1E-4),upper=c(100,100),method='L-BFGS-B')  
   
   a <- res$par[1]
   b <- res$par[2]
   
-#   pi_fun <- function(alpha,a,b,k,n){exp((k+a-1)*log(alpha)-b*alpha+lgamma(alpha)-lgamma(alpha+n))}
-#   
-#   pi_k <- vector(,n)
-#   for (k in 1:n){
-#     nint <- integrate(pi_fun,lower=0,upper=Inf,a=a,b=b,k=k,n=n,stop.on.error =F, abs.tol = 0.)
-#     pi_k[k] <- (((b^a))/gamma(a))*nint$value
-#   }
-#   
-#   plot(1:n,pi_k,xlab='number of sources',ylab='prior probability mass')
-#   
+#   # same as within the KL function, just for plotting
+    
+    #integral
+    pi_fun <- function(alpha,otros){
+      a <-otros$a
+      b <-otros$b
+      n <- otros$n
+      k <- otros$k
+      exp((k+a-1)*log(alpha)-b*alpha+lgamma(alpha)-lgamma(alpha+n))
+      
+    }
+    
+    pi_k=vector(,n)
+    for (k in 1:n){
+      nint <- integrate(pi_fun,lower=0,upper=Inf,otros=list(a=a,b=b,k=k,n=n),stop.on.error =T,abs.tol=0.)$value
+      pi_k[k] <- (((b^a)*snk[n,k])/gamma(a))*nint
+      
+    }
+  
+     pi_k=pi_k/sum(pi_k)
+     plot(1:n,pi_k,pch=16,col=4,xlab='number of sources',ylab='prior probability mass')
+     points(1:n,g,pch=17,col=3)
+  legend(n-n/3,(max(c(pi_k,g))),pch=16:17,legend=c("induced prior","original prior"),col=4:3)
   list(a=a,b=b)
   
 }

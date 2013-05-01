@@ -8,7 +8,7 @@
 DPM.call <- function(datas=NULL,baseline=NULL,labels=NULL,learn=FALSE,iters=1000,thin=10,np=1,
              typeof='N',path.to.julia=getwd(),call_DPM_path=getwd())             
 {
-  write.csv(file='single_priors.csv',c(a.0,b.0,k.0,v.0,mu.0))
+  write.csv(file='single_priors.csv',c(a.0,b.0,k.0,ak.0,bk.0,v.0,mu.0))
   write.csv(file='matrix_priors.csv',lambda.0)
   write.csv(file='datas.csv',datas)
 
@@ -46,7 +46,7 @@ k_0s <- read.csv("k_0s.csv",header=F)
 MM.call <- function(datas=NULL,baseline=NULL,labels=NULL,conditional=FALSE,iters=1000,thin=10,np=1,
              typeof='N',path.to.julia=getwd(),call_MM_path=getwd())             
 {
-  write.csv(file='single_priors.csv',c(a.0,b.0,k.0,v.0,mu.0))
+  write.csv(file='single_priors.csv',c(a.0,b.0,k.0,ak.0,bk.0,v.0,mu.0))
   write.csv(file='matrix_priors.csv',lambda.0)
   write.csv(file='datas.csv',datas)
 
