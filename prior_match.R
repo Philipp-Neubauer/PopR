@@ -5,7 +5,7 @@ get_prior_ab <- function(n,g='uniform',mu=NULL,var=NULL){
   } else if (g=='poisson') {
     g <- dpois(1:n,mu)
   } else if (g=='negbin') {
-    g <- dnbinom(1:n,mu,var)
+    g <- dnbinom(1:n,mu=mu,size=var)
   } else if (g=='lnorm') {
     g <- dlnorm(1:n,mu,var)
   } else if (g=='norm'){
