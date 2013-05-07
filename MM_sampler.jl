@@ -20,13 +20,14 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
     probas=Array(Float,(consts.N,consts.sources,nit))
     
     consts,Stats,allcounts = preallocate(consts,Stats,priors,allcounts)
-    
+    Stats,allcounts,counts = preclass(consts,Stats,priors,allcounts,counts,class_id)
+   
     tic()
     totaltime=0
 
  # get likelihood for each ind if cond
 
-    if cond ==1
+    #if cond ==1
  
         for i=1:consts.N
             for j=1:consts.sources
@@ -36,16 +37,15 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
             end
         end
 
-    end
+    #end
     
     ## start MCMC ---- 
     for iter=1:num_iters
     #println(iter)
         for i=1:consts.N
 
-        if iter>1
-            counts[class_id[i]] = counts[class_id[i]] - 1
-        end
+           counts[class_id[i]] = counts[class_id[i]] - 1
+        
             
             for j=1:consts.sources      
                 # get likelihood for each ind if uncond
@@ -94,7 +94,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
 
         time_1_iter = toq();
         #println(prop)
-        totaltime = disptime(totaltime,time_1_iter,iter,thin,num_iters, -sum(props[:,1:int(iter/thin)].*log(props[:,1:int(iter/thin)]),1))
+        totaltime = disptime(totaltime,time_1_iter,iter,thin,num_iters)
         tic()
         
     end

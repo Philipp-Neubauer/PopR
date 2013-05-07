@@ -188,6 +188,25 @@ total_time = total_time + time_1_iter
 
 end
 
+## display time remaining
+
+function disptime(total_time,time_1_iter,iter,thin,num_iters)
+
+total_time = total_time + time_1_iter
+    if iter.==1
+       println(string("Iter: ",dec(iter),"/",dec(num_iters)))
+    elseif mod(iter,thin*100).==0
+        rem_time = (time_1_iter*.05 + 0.95*(total_time/iter))*num_iters-total_time
+        if rem_time < 0
+            rem_time = 0
+        end
+        println(string("Iter: ",dec(iter),'/',dec(num_iters),", Rem. Time: ", secs2hmsstr(rem_time)))
+    end
+
+    return(total_time)
+
+end
+
 # convert secs into dhminsec
 
 function secs2hmsstr(secs)

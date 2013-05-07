@@ -23,7 +23,7 @@ num.sources = 4  # 'true' number of sources
 num.elements = 5 # number of elements
 num.per.source = 30 # individuals per source
 
-sep = 4 # separation of means
+sep = 24 # separation of means
 
 means = mvrnorm(num.sources,rep(0,num.elements),diag(rep(sep,num.elements)))
 
@@ -38,7 +38,7 @@ for (i in 1:num.sources){
 label=sort(rep(1:num.sources,num.per.source))
 scores = princomp(datas)$scores
 #pdf('PCAplot.pdf',colormodel='cmyk')
-plot(scores[,1],scores[,2],col=cbPalette[label],xlab='LD1',ylab='LD2',pch=16)
+plot(scores[,1],scores[,2],col=cbPalette[label],xlab='PC1',ylab='PC2',pch=16)
 #dev.off()
 ##########################
 ### now use the DPM ######
@@ -51,7 +51,7 @@ num.elements=ncol(data.DPM)
 # OR use first num.elements principal components to overcome dimensionality problems: 
 # NOTE, this may throw away useful info --- 
 # summary(princomp(datas))
-# num.elements=3
+# num.elements=2
 # data.DPM = t(apply(scores[,1:num.elements],1,function(x){x-colMeans(scores[,1:num.elements])}))
 
 
@@ -72,7 +72,7 @@ b.0
 
 # degrees of freedom - at least num.elements+1
 # higher v.0 equate to a more informative prior for source covariance
-v.0  = num.elements+1
+v.0  = num.elements+20
 
 vars = 1 # best case scenario - we actually know the (co-)variance...this is not the case in practice
 
@@ -146,16 +146,16 @@ hc = hclust(dist(data.DPM))
 hcp = as.phylo(hc)
 hcp$tip.label=rep('o',n)
 
-pdf('hardest PCAOD Poisprior example.pdf',width=12, height=3,colormodel='cmyk')
+pdf('hardest PCAPD Poisprior example.pdf',width=12, height=3)
 par(mfrow=c(1,4))
 par(mar=c(5,4,2,1)+0.1)
-plot(scores[,1],scores[,2],col=cbPalette[label],xlab='PCA1',ylab='PCA2',pch=16)
+plot(scores[,1],scores[,2],col=cbPalette[label*1.8],xlab='PCA1',ylab='PCA2')
 par(mar=c(1,1,1,1)+0.1)
-plot.phylo(reorder(hcp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length))),tip.color=c(cbPalette[label]),type='f')
+plot.phylo(reorder(hcp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(hcp$edge.length))),tip.color=c(cbPalette[label*1.8]),type='f')
 par(mar=c(5,4,2,0)+0.1)
 hist(classes[keeps,1],bins,col='grey',xlab='number of sources',main='',freq=F)
 par(mar=c(1,1,1,1)+0.1)
-plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(cbPalette[label],0),type='f')
+plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(cbPalette[label*1.8],0),type='f')
 dev.off()
 
 #### playing with the covariance shows the sensitivity to the prior
@@ -247,7 +247,7 @@ num.elements=ncol(mixed)
 
 
 # prior for gamma - set to something more informative now
-n = sum(num.per.source[(num.sources+1):(num.sources+extra.sources)])
+n = length(mixedlabels)
 ab = get_prior_ab(n,'poisson',4)
 
 a.0 = ab[[1]]
@@ -261,43 +261,38 @@ b.0
 # higher v.0 equates to a more informative prior
 v.0  = num.elements+1
 
-# prior covariance - try a number of options - this shows how sensitive the
-# model/data combination is to prior choice...
-
-# play with the variance to see how the variance and source separation
-# interact (use same var for each element.) - for good source separation
-# this should not be very important i.e. the prior should not influence the
-# number of sources. This changes when sources are not easily identifyable
-
-vars = by(baseline,baselabels,cov) # consider changing this over orders of margnitude - e.g., 0.1,1,10 and rerun the anlysis with each
+# prior covariance 
+vars = by(baseline,baselabels,cov) 
 var=0
 for (i in 1:num.sources){
   var=var+(1/num.sources)*solve(vars[[i]])
 }
 lambda.0 = solve(var)
-#lambda.0=diag(0.01,num.elements)
 
 # prior for k_0 - small values are uninformative, but may lead to very poor mixing and numerical instability.
 ak.0 = 1
 bk.0 = 1
-# initial k_0...
+# initial k_0...is estimated so no need to change
 k.0  = 1
-# prior mean
+# initial prior mean...is estimated so no need to change
 mu.0 = colMeans(baseline)
 
 # numebr of parallel processing jobs - set to a max of number of cores of the CPU+1(the +1 just calls the cumputing instances)
-np=2+1
+np=1+1
 
 burnin = 100  # number of (kept!) iterations to discard
 
 # number of iterations per processor
 num.iters=1000+burnin
-# thinning of the marcov chain
+# thinning of the Markov chain
 thin=2
 # total number of kept iterations
 niter=(np-1)*num.iters/thin
 
-# if julia is not installed and in the path, or is moved to a different directory, the path to the executeable must be provided, else the working directory is taken as default
+# if julia is not installed and in the path, 
+# or is moved to a different directory, the 
+#path to the executeable must be provided (and changed in the line below), 
+#else the working directory is taken as default
 outputs =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
 
 # these are the source allocations for all kept MCMC iterations
@@ -349,9 +344,11 @@ hc = hclust(dist(data))
 hcp = as.phylo(hc)
 hcp$tip.label=rep('o',N)
 
-pdf('fix simulation.pdf',width=5, height=5,colormodel='cmyk')
+plot.phylo(reorder(hcp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1)),tip.color=c(1:num.sources,mixedlabels),type='f')
+
+pdf('fix simulation.pdf',width=5, height=5)
 par(mar=c(5,4,2,1)+0.1)
-plot(baseline_t[,1],baseline_t[,2],col=cbPalette[baselabels],pch=16,xlab='LD1',ylab='LD2')
+plot(baseline_t[,1],baseline_t[,2],col=cbPalette[baselabels],pch=18,xlab='LD1',ylab='LD2')
 points(mixed_t[,1],mixed_t[,2],col=cbPalette[mixedlabels],pch=17)
 dev.off()
 
@@ -360,7 +357,7 @@ par(mfrow=c(1,2))
 par(mar=c(5,4,2,0)+0.1)
 hist(classes[keeps,1],bins,col='grey',xlab='number of sources',main='',freq=F)
 par(mar=c(1,1,1,1)+0.1)
-plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(1:num.sources,mixedlabels,0),type='f')
+plot.phylo(reorder(Zp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1),0),tip.color=c(cbPalette[c(1:num.sources,mixedlabels)],0),type='f')
 dev.off()
 
 # lda classification succes
