@@ -13,30 +13,26 @@ elink.call(class.ids, path.to.julia = getwd(), elink_path = getwd())
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{class.ids}{
-%%     ~~Describe \code{class.ids} here~~
+A matrix of class memberships as produced by iterative estiamtion of mixtures, where columns are MCMC samples and rows are mixed sample individuals. Can be the $class_ids field of the output produced by \code{\link{call_DPM}}
 }
   \item{path.to.julia}{
-%%     ~~Describe \code{path.to.julia} here~~
+provides the path to the julia executable - defaults to the working directory
 }
   \item{elink_path}{
-%%     ~~Describe \code{elink_path} here~~
+provides the path to the julia source script - defaults to the exec directory in the package root of PopR
 }
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+A canonical representation of the tree, as produced used by matlabs tree plotting functions. Can be transformed into a phylo type object using \code{\link{as.phylogg}}
 }
 \references{
 %% ~put references to the literature/web site here ~
 }
 \author{
-%%  ~~who you are~~
+Philipp Neubauer
 }
 \note{
 %%  ~~further notes~~
@@ -45,30 +41,9 @@ elink.call(class.ids, path.to.julia = getwd(), elink_path = getwd())
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
+\code{\link{as.phylogg}},\code{\link{DPM.call}},\code{\link{MM.call}}
 }
-\examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
 
-## The function is currently defined as
-function (class.ids, path.to.julia = getwd(), elink_path = getwd()) 
-{
-    write.csv(file = "class_ids.csv", class.ids)
-    if (.Platform$OS.type == "unix") {
-        exec = file.path(path.to.julia, "./julia")
-    }
-    else {
-        exec = file.path(path.to.julia, "julia/julia.bat")
-    }
-    command = paste(exec, file.path(elink_path, "elink.jl"), 
-        getwd())
-    system(command)
-    link <- read.csv("linkages.csv", header = F)
-    list(tree = link)
-  }
-}
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
 \keyword{ ~kwd1 }

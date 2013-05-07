@@ -2,7 +2,7 @@
 \alias{MM.call}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Calls Julia to conduct BAyesian inference in finite mixtures
+Calls Julia to conduct Bayesian inference in finite mixtures
 }
 \description{
 %%  ~~ A concise (1-5 lines) description of what the function does. ~~
@@ -13,51 +13,57 @@ MM.call(datas = NULL, baseline = NULL, labels = NULL, conditional = FALSE, iters
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{datas}{
-%%     ~~Describe \code{datas} here~~
+the mixed sample - an n by p matrix of n individuals and p variables
 }
   \item{baseline}{
-%%     ~~Describe \code{baseline} here~~
+the baseline - an K by p matrix of K individuals and p variables
 }
   \item{labels}{
-%%     ~~Describe \code{labels} here~~
+the baseline group (source) memberships (optional) - a K integer vector
 }
   \item{conditional}{
-%%     ~~Describe \code{conditional} here~~
+Should the analysis be conditional? TRUE or FALSE (default)
 }
   \item{iters}{
-%%     ~~Describe \code{iters} here~~
+number of MCMC iterations
 }
   \item{thin}{
-%%     ~~Describe \code{thin} here~~
+thinning interval of the Markov Chain
 }
   \item{np}{
-%%     ~~Describe \code{np} here~~
+depricated
 }
   \item{typeof}{
-%%     ~~Describe \code{typeof} here~~
+Normal model inference is supported for now with option 'N'.
 }
   \item{path.to.julia}{
-%%     ~~Describe \code{path.to.julia} here~~
+provides the path to the julia executable - defaults to the working directory. If elsewhere, and not in the system PATH, the path needs to be provided here.
 }
   \item{call_MM_path}{
-%%     ~~Describe \code{call_MM_path} here~~
+provides the path to the julia source script - defaults to the exec directory in the package root of PopR (where it should be)
 }
 }
 \details{
 %%  ~~ If necessary, more details than the description above ~~
 }
 \value{
-%%  ~Describe the value returned
-%%  If it is a LIST, use
-%%  \item{comp1 }{Description of 'comp1'}
-%%  \item{comp2 }{Description of 'comp2'}
-%% ...
+A list with fields:
+ \item{class_ids}{
+A matrix of class memberships where columns are MCMC samples and rows are mixed sample individuals. 
+}
+ \item{proportions}{
+ Samples from the posterior distribution of class proportions at each MCMC iteration.
+}
+ \item{post_probas}{
+ Samples from the posterior distribution of posterior probabilities of class memebership for each individual
+}
+
 }
 \references{
 %% ~put references to the literature/web site here ~
 }
 \author{
-%%  ~~who you are~~
+Philipp Neubauer
 }
 \note{
 %%  ~~further notes~~
@@ -66,42 +72,7 @@ MM.call(datas = NULL, baseline = NULL, labels = NULL, conditional = FALSE, iters
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
-%% ~~objects to See Also as \code{\link{help}}, ~~~
-}
-\examples{
-##---- Should be DIRECTLY executable !! ----
-##-- ==>  Define data, use random,
-##--	or do  help(data=index)  for the standard data sets.
-
-## The function is currently defined as
-function (datas = NULL, baseline = NULL, labels = NULL, conditional = FALSE, 
-    iters = 1000, thin = 10, np = 1, typeof = "N", path.to.julia = getwd(), 
-    call_MM_path = getwd()) 
-{
-    write.csv(file = "single_priors.csv", c(a.0, b.0, k.0, ak.0, 
-        bk.0, v.0, mu.0))
-    write.csv(file = "matrix_priors.csv", lambda.0)
-    write.csv(file = "datas.csv", datas)
-    cond = ifelse(conditional == F, 0, 1)
-    write.csv(file = "baseline.csv", baseline)
-    write.csv(file = "labels.csv", labels)
-    if (.Platform$OS.type == "unix") {
-        exec = file.path(path.to.julia, "./julia")
-        command = paste(exec, "-p", np, file.path(call_MM_path, 
-            "call_MM.jl"), cond, iters, thin, typeof, getwd())
-        system(command)
-    }
-    else {
-        exec = file.path(path.to.julia, "/julia/julia.bat")
-        command = c("-p", np, file.path(call_MM_path, "call_MM.jl"), 
-            cond, iters, thin, typeof, getwd())
-        system2(exec, command)
-    }
-    class_ids <- read.csv("source_ids.csv", header = F)
-    proportions <- read.csv("proportions.csv", header = F)
-    post_probas <- read.csv("post_probas.csv", header = F)
-    list(class_ids = class_ids, proportions = proportions, post_probas = post_probas)
-  }
+\code{\link{elink.call}},\code{\link{as.phylogg}},\code{\link{DPM.call}}
 }
 % Add one or more standard keywords, see file 'KEYWORDS' in the
 % R documentation directory.
