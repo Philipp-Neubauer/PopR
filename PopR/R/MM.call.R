@@ -17,12 +17,12 @@ function(datas=NULL,baseline=NULL,labels=NULL,conditional=FALSE,iters=1000,thin=
   if (.Platform$OS.type == "unix")
     {
       exec=file.path(path.to.julia,'./julia')
-      command=paste(exec,'-p',np,file.path(call_MM_path,'call_MM.jl'),cond,iters,thin,typeof,getwd())
+      command=paste(exec,'-p',np,file.path(call_MM_path,'call_MM.jl'),cond,iters,thin,typeof,getwd(),call_MM_path)
       system(command)
   } else
     {
       exec=file.path(path.to.julia,'/julia/julia.bat')
-      command=c('-p',np,file.path(call_MM_path,'call_MM.jl'),cond,iters,thin,typeof,getwd())
+      command=c('-p',np,file.path(call_MM_path,'call_MM.jl'),cond,iters,thin,typeof,getwd(),call_MM_path)
       system2(exec,command)
   }    
   

@@ -1,9 +1,9 @@
-function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
+function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,stats,counts,K_plus,alpha,p_under_prior_alone)
 
     # take this out later !!!!
     #class_idd=class_id
     #class_idd_old=deepcopy(class_idd)
-    #Stats_old = deepcopy(Stats)
+    #stats_old = deepcopy(stats)
     #counts_old=deepcopy(counts)
     #K_plus_old=deepcopy(K_plus)
     
@@ -19,7 +19,7 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
         old_class_ids= class_idd[i]
 
         # temporary variables
-        tempStats = deepcopy(Stats);
+        tempstats = deepcopy(stats);
         class_idd_temp = class_idd-0
         K_plus_temp = K_plus-0
         tempcounts = counts-0          
@@ -42,12 +42,12 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
                 tempcounts[K_plus_temp+1] = 0;           
                 old_class_ids=K_plus_temp+1
                 
-                tempStats[1:K_plus_temp] =  tempStats[hits]
-                tempStats[K_plus_temp+1] =  0
+                tempstats[1:K_plus_temp] =  tempstats[hits]
+                tempstats[K_plus_temp+1] =  0
                                              
             else
                 
-                tempStats[old_class_ids]=update_Stats(tempStats[old_class_ids],y,tempcounts[old_class_ids],-1)
+                tempstats[old_class_ids]=update_stats(tempstats[old_class_ids],y,tempcounts[old_class_ids],-1)
                 
             end
         end
@@ -64,10 +64,10 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
         for ell = 1:K_plus_temp
            
             if old_class_ids.== ell || old_class_ids.== 0
-                (tempStats[ell],likelihood[ell]) = getlik(consts,priors,tempStats[ell],y,tempcounts[ell],true,true)
+                (tempstats[ell],likelihood[ell]) = getlik(consts,priors,tempstats[ell],y,tempcounts[ell],true,true)
                 
             else
-                likelihood[ell] = getlik(consts,priors,tempStats[ell],y,tempcounts[ell],true,false)
+                likelihood[ell] = getlik(consts,priors,tempstats[ell],y,tempcounts[ell],true,false)
             end                     
         
         end
@@ -76,7 +76,7 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
 
        # if !all((likelihood.>=0.0) | (likelihood.<=0.0))
         #println(likelihood)
-       #     return(class_idd_old,K_plus_old,Stats_old,counts_old)
+       #     return(class_idd_old,K_plus_old,stats_old,counts_old)
        # end
         
         likelihood = exp(likelihood-max(likelihood))
@@ -110,16 +110,16 @@ function crp_gibbs(datas,iter,class_idd,consts,N,priors,yyT,Stats,counts,K_plus,
             K_plus = K_plus_temp-0
             counts = tempcounts-0
             
-            tempStats[new_class_ids]=update_Stats(tempStats[new_class_ids],y,counts[new_class_ids],1)
+            tempstats[new_class_ids]=update_stats(tempstats[new_class_ids],y,counts[new_class_ids],1)
 
                     
-            tempStats[new_class_ids] = getlik(consts,priors,tempStats[new_class_ids],y,counts[new_class_ids],false,true)
+            tempstats[new_class_ids] = getlik(consts,priors,tempstats[new_class_ids],y,counts[new_class_ids],false,true)
                   
-            Stats = deepcopy(tempStats) 
+            stats = deepcopy(tempstats) 
         end
     
     end
     
-    return(class_idd,K_plus,Stats,counts)
+    return(class_idd,K_plus,stats,counts)
     
     end

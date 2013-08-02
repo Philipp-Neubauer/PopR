@@ -6,9 +6,9 @@ Stats = inp[3]
 priors = inp[4]
 consts = inp[5]
     
-    require("Julia_code_support.jl")
-    require("gibbs_crp_fix.jl")
-    require("split-merge_fix.jl")
+    require(string(CP,"/Julia_code_support.jl"))
+    require(string(CP,"/gibbs_crp_fix.jl"))
+    require(string(CP,"/split-merge_fix.jl"))
 
      alpha = 0.1
 
@@ -26,8 +26,8 @@ consts = inp[5]
     alpha_record = Array(Float,nit)
     p_under_prior_alone = Array(Float,consts.N);
 
-    consts,Stats,allcounts = preallocate(consts,Stats,priors,allcounts)   
-    Stats,allcounts,counts = preclass(consts,Stats,priors,allcounts,counts,class_id)
+    consts,stats,allcounts = preallocate(consts,stats,priors,allcounts)   
+    stats,allcounts,counts = preclass(consts,stats,priors,allcounts,counts,class_id)
     tic()
     totaltime=0
     
@@ -38,17 +38,17 @@ consts = inp[5]
         p_under_prior_alone = p_for_1(consts,priors,consts.N,consts.datas,p_under_prior_alone)
  # run gibbs bit      
       
-        (class_id,K_plus,Stats,counts,allcounts) = crp_gibbs(class_id,consts,priors,Stats,allcounts,counts,K_plus,alpha,p_under_prior_alone)
+        (class_id,K_plus,stats,counts,allcounts) = crp_gibbs(class_id,consts,priors,stats,allcounts,counts,K_plus,alpha,p_under_prior_alone)
 
        
         # run split-merge bit
         
         #if iter>10
-            (class_id,K_plus,Stats,counts,allcounts) = split_merge(class_id,consts,priors,Stats,counts,allcounts,K_plus,alpha,p_under_prior_alone)
+            (class_id,K_plus,stats,counts,allcounts) = split_merge(class_id,consts,priors,stats,counts,allcounts,K_plus,alpha,p_under_prior_alone)
         # end
          
        
-        # assert(all(round((Stats.means)*counts/90,4) .==round( mean(datas,2),4)))
+        # assert(all(round((stats.means)*counts/90,4) .==round( mean(datas,2),4)))
 
         # update alpha
 
@@ -56,7 +56,7 @@ consts = inp[5]
 
         # update prior
         
-        (priors.k_0,priors.mu_0) = update_prior(consts,K_plus,Stats,counts,priors)
+        (priors.k_0,priors.mu_0) = update_prior(consts,K_plus,stats,counts,priors)
         
         # save parameter values
         

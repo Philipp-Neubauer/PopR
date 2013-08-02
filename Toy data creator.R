@@ -2,14 +2,6 @@
 
 # DPM toolbox by P.Neubauer -  distributed under GNU GPL licence V3.
 
-require(MASS)
-require(ape)
-source("Julia_call_function.R")
-source("elink.call.R")
-source("convert_Z_to_phylo.R")
-source("prior_match.R")
-setwd("/home/philbobsqp/Work//Projects/Papersampler")
-
 # set color palette to colorblind friendly colors
 cbPalette = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#FF796B","#999999", "#F0E442", "#0072B2", "#D55E00")
 
@@ -19,9 +11,9 @@ cbPalette = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#FF796B","#999999", "
 
 #  multi-normal source distributions - in an ideal world...
 
-num.sources = 4  # 'true' number of sources
+num.sources = 3  # 'true' number of sources
 num.elements = 5 # number of elements
-num.per.source = 30 # individuals per source
+num.per.source = 15 # individuals per source
 
 sep = 24 # separation of means
 
@@ -96,7 +88,7 @@ num.iters=1000
 thin=1
 
 # number of parallel processes (chains) to run (recommended to keep at <= core of CPU) set to np + 1 since one instance only calls and summarizes the work...
-np=2+1
+np=1+1
 
 # total number of kept iterations
 niter=(np-1)*num.iters/thin
@@ -108,7 +100,7 @@ burnin = 100  # number of (kept!) iterations to discard
 # there will most likely be no output on the terminal in windows until the very end. 
 #this works better in Linux (OSX?)where progress is displayed continously - K^+ is the estimated number of sources
 
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbobsqp/Work/julia')
+output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='~/Deps/julia')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)

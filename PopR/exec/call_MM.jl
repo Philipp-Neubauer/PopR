@@ -7,21 +7,21 @@ numiters =int(ARGS[2])
 Typeof=ARGS[4]
 
 cd(ARGS[5])
-
+@everywhere CP = ARGS[6]
 
 @everywhere typealias Float Float64
 
-@everywhere datas=readdlm("datas.csv",",",Float)[2:end,2:end]'
+@everywhere datas=readdlm("datas.csv",',',Float)[2:end,2:end]'
 
-@everywhere single_priors = readdlm("single_priors.csv",",",Float)[2:end,2]
+@everywhere single_priors = readdlm("single_priors.csv",',',Float)[2:end,2]
     
-@everywhere matrix_priors = readdlm("matrix_priors.csv",",",Float)[2:end,2:end]
+@everywhere matrix_priors = readdlm("matrix_priors.csv",',',Float)[2:end,2:end]
 
 
 @everywhere const pc_max_ind=int(1e5)
 @everywhere const (D, N) = size(datas)
     
-@everywhere    require("fixtype.jl")   
+@everywhere    require(string(CP,"/fixtype.jl"))   
  
 
 #################################################
@@ -38,7 +38,7 @@ probas=Array(Float,(size(datas,2),consts.sources))
 ######### --- RUN IT ----########################
 #################################################
 
-@everywhere require("MM_sampler.jl")
+@everywhere require(string(CP,"/MM_sampler.jl"))
 #@everywhere load("define_types.jl")
 
 
