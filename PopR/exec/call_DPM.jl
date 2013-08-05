@@ -76,7 +76,7 @@ else
     inp = {datas,numiters,thin,stats,priors,consts,CP};
     M = {inp for i=1:np-1};
         
-    outs = pmap(DPM_sampler,M)
+    outs = pmap(DPM_sampler,M);
    
 end
 

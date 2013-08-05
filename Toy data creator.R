@@ -100,7 +100,7 @@ burnin = 100  # number of (kept!) iterations to discard
 # there will most likely be no output on the terminal in windows until the very end. 
 #this works better in Linux (OSX?)where progress is displayed continously - K^+ is the estimated number of sources
 
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='~/Deps/julia')
+Output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='~/Deps/julia')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
