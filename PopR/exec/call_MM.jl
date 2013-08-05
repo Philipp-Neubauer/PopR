@@ -7,7 +7,14 @@ numiters =int(ARGS[2])
 Typeof=ARGS[4]
 
 cd(ARGS[5])
-@everywhere CP = ARGS[6]
+
+cps = ARGS[6]
+
+CP = ARwritedlm("CP.csv",{cps})
+
+@everywhere CP=readdlm("CP.csv")
+
+@everywhere CP=CP[1]
 
 @everywhere typealias Float Float64
 

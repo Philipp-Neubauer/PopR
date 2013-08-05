@@ -2,6 +2,8 @@
 
 # DPM toolbox by P.Neubauer -  distributed under GNU GPL licence V3.
 
+require(PopR)
+
 # set color palette to colorblind friendly colors
 cbPalette = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#FF796B","#999999", "#F0E442", "#0072B2", "#D55E00")
 
@@ -100,7 +102,7 @@ burnin = 100  # number of (kept!) iterations to discard
 # there will most likely be no output on the terminal in windows until the very end. 
 #this works better in Linux (OSX?)where progress is displayed continously - K^+ is the estimated number of sources
 
-Output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='~/Deps/julia')
+Output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/usr/local/Cellar/julia/HEAD/bin')
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
