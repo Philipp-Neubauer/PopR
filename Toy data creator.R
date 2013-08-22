@@ -99,7 +99,7 @@ burnin = 100  # number of (kept!) iterations to discard
 # there will most likely be no output on the terminal in windows until the very end. 
 #this works better in Linux (OSX?)where progress is displayed continously - K^+ is the estimated number of sources
 
-Output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/usr/local/Cellar/julia/HEAD/bin',a.0,b.0,ak.0,bk.0,v.0,lambda.0)
+Output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/usr/local/Cellar/julia/HEAD/bin',a.0=a.0,b.0=b.0,ak.0=ak.0,bk.0=bk.0,v.0=v.0,lambda.0=lambda.0)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
@@ -280,7 +280,7 @@ niter=(np-1)*num.iters/thin
 # or is moved to a different directory, the 
 #path to the executeable must be provided (and changed in the line below), 
 #else the working directory is taken as default
-outputs =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',a.0,b.0,ak.0,bk.0,v.0,lambda.0)
+outputs =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',a.0=a.0,b.0=b.0,ak.0=ak.0,bk.0=bk.0,v.0=v.0,lambda.0=lambda.0)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(outputs$class_id)
@@ -354,7 +354,7 @@ mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
 # compare against mixture models
 
 # conditional analysis
-cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0,lambda.0)
+cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0= v.0,lambda.0=lamda.0)
 
 cond.class.id = as.data.frame(cond.output$class_id)
 cc.fix=cond.class.id[,keeps]
@@ -373,7 +373,7 @@ plot.phylo(reorder(Zp, order = "c")
 
 
 # unconditional analysis
-uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0,lambda.0)
+uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0=v.0,lambda.0=lambda.0)
 
 ucond.class.id = as.data.frame(uncond.output$class_id)
 uc.fix=ucond.class.id[,keeps]
