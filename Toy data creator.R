@@ -79,10 +79,7 @@ bk.0 = 1
 
 ak.0*bk.0
 
-# initial value for certainty about the mean...
-k.0  = 1
-# initial value for prior mean
-mu.0 = colMeans(data.DPM)
+
 
 # number of iterations per processor
 num.iters=1000
@@ -102,7 +99,7 @@ burnin = 100  # number of (kept!) iterations to discard
 # there will most likely be no output on the terminal in windows until the very end. 
 #this works better in Linux (OSX?)where progress is displayed continously - K^+ is the estimated number of sources
 
-Output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/usr/local/Cellar/julia/HEAD/bin')
+Output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/usr/local/Cellar/julia/HEAD/bin',a.0,b.0,ak.0,bk.0,v.0,lambda.0)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
@@ -266,10 +263,6 @@ lambda.0 = solve(var)
 # prior for k_0 - small values are uninformative, but may lead to very poor mixing and numerical instability.
 ak.0 = 1
 bk.0 = 1
-# initial k_0...is estimated so no need to change
-k.0  = 1
-# initial prior mean...is estimated so no need to change
-mu.0 = colMeans(baseline)
 
 # numebr of parallel processing jobs - set to a max of number of cores of the CPU+1(the +1 just calls the cumputing instances)
 np=1+1
@@ -287,7 +280,7 @@ niter=(np-1)*num.iters/thin
 # or is moved to a different directory, the 
 #path to the executeable must be provided (and changed in the line below), 
 #else the working directory is taken as default
-outputs =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
+outputs =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',a.0,b.0,ak.0,bk.0,v.0,lambda.0)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(outputs$class_id)
@@ -361,7 +354,7 @@ mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
 # compare against mixture models
 
 # conditional analysis
-cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
+cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0,lambda.0)
 
 cond.class.id = as.data.frame(cond.output$class_id)
 cc.fix=cond.class.id[,keeps]
@@ -380,7 +373,7 @@ plot.phylo(reorder(Zp, order = "c")
 
 
 # unconditional analysis
-uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
+uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0,lambda.0)
 
 ucond.class.id = as.data.frame(uncond.output$class_id)
 uc.fix=ucond.class.id[,keeps]

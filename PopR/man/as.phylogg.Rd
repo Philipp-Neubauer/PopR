@@ -4,7 +4,7 @@
 converts output from exact linkage algorithm (Z) to ape 'phylo' format for tree visualization
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Produce an ape 'phylo' format object for tree visualization
 }
 \usage{
 as.phylogg(Z, N, tip.label = as.character(1:N))
@@ -21,27 +21,22 @@ The number of tips (individual samples)
 tip.label are individual sample labels to be displayed on the tree
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+
 \value{
 Phylogenetic tree object for use with the ape package.
 }
 \references{
-TBA
+P. Neubauer, J.S. Shima and S.E. Swearer - Inferring dispersal and migrations from incomplete geochemical baselines: analysis of population structure using Bayesian infinite mixture models. DOI: 10.1111/2041-210X.12076
+
+\url{http://onlinelibrary.wiley.com/doi/10.1111/2041-210X.12076/abstract}
 }
 \author{
 Philipp Neubauer
 }
-\note{
-%%  ~~further notes~~
-}
+
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{elink.call}}
 }
-
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

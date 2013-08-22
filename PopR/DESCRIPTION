@@ -6,5 +6,6 @@ Version: 1.0
 Date: 2013-05-01
 Author: Philipp Neubauer
 Maintainer: Philipp Neubauer <neubauer.phil@gmail.com>
+URL: https://github.com/Philipp-Neubauer/PopR
 Description: The package implements R wrappers for the analysis of population structure using Dirichlet process models coded in Julia. Julia is a recent open source, high performance language for technical computing. Please follow the instructions in the package url to install Julia and to set up necessary packages in Julia. Post processing is done by transforming the output with the exact linkage algorithm implemented in Julia as well, with plotting functions from the ape package providing tree plotting facilities. 
 License: GPL (>= 2)
