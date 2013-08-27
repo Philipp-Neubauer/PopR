@@ -18,11 +18,11 @@ writedlm("CP.csv",{cps})
 
 @everywhere typealias Float Float64
 
-@everywhere datas=readdlm("datas.csv",',',Float)[2:end,2:end]'
+@everywhere datas=readdlm("datas.csv",',',Float)'
 
-@everywhere single_priors = readdlm("single_priors.csv",',',Float)[2:end,2]
+@everywhere single_priors = readdlm("single_priors.csv",',',Float)
     
-@everywhere matrix_priors = readdlm("matrix_priors.csv",',',Float)[2:end,2:end]
+@everywhere matrix_priors = readdlm("matrix_priors.csv",',',Float)
 
 
 @everywhere const pc_max_ind=int(1e5)

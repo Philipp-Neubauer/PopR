@@ -2,7 +2,7 @@ function  DPM_sampler_fix(inp::Array{Any,1})
 
 num_iters = inp[1]
 thin = inp[2]
-Stats = inp[3]
+stats = inp[3]
 priors = inp[4]
 consts = inp[5]
     

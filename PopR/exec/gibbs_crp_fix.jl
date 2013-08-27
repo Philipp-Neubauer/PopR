@@ -17,7 +17,7 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
         old_class_ids= class_idd[i]
 
         # temporary variables
-        tempStats = deepcopy(Stats);
+        tempstats = deepcopy(Stats);
         class_idd_temp = class_idd-0
         K_plus_temp = K_plus-0
         tempcounts = counts-0
