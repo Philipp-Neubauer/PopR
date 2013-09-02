@@ -173,7 +173,7 @@ num.per.source = rep(50,num.sources) # number of samples per source
 num.per.source = c(num.per.source,sample.int(10,extra.sources)+5) # number of samples per extra.sources
 as=num.sources+extra.sources
 
-sep = 4 # separation of means
+sep = 8 # separation of means
 means = mvrnorm(as,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,sum(num.per.source),num.elements)
@@ -222,10 +222,6 @@ baselabels = label[bix]
 mixed = t(apply(mixed,1,function(x){x-colMeans(baseline)}))
 baseline = t(apply(baseline,1,function(x){x-colMeans(baseline)}))
 
-# rounds are baseline, triangles are mixed sample
-
-plot(baseline[,1],baseline[,2],col=cbPalette[baselabels],pch=16)
-points(mixed[,1],mixed[,2],col=cbPalette[mixedlabels],pch=17)
 
 num.elements=ncol(mixed)
 ## done
@@ -284,7 +280,9 @@ classes = as.data.frame(outputs$K_record)
 
 # check if the markov chain for number of sources has converged and is mixing:
 lpc=niter/(np-1)
-keeps = rep((burnin+1):(niter/(np-1)),np-1)+rep(0:(np-2)*lpc,each=niter/2-burnin)
+if (np>2)
+{keeps = rep((burnin+1):(niter/(np-1)),np-1)+rep(0:(np-2)*lpc,each=niter/2-burnin)} else 
+{keeps = rep((burnin+1):(niter/(np-1)),np-1)}
 
 plot(classes[keeps,1]) # number of sources
 plot(outputs$alpha_record[keeps,1]) #concentration parameter 
@@ -304,7 +302,7 @@ for (i in num.sources:1){
 S.fix= rbind(rep(i,niter-burnin),S.fix)}
 
 # make tree
-Z = elink.call(S.fix,'/home/philbobsqp/Work/julia')$tree
+Z = elink.call(S.fix,ptj)$tree
 
 # convert to ape phylogeny for plotting
 N=length(mixedlabels)

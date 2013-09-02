@@ -1,7 +1,7 @@
-function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p_under_prior_alone)
+function crp_gibbs(class_idd,consts,priors,stats,allcounts,counts,K_plus,alpha,p_under_prior_alone)
 
     # take this out later !!!!
-    #class_idd=class_id
+    #class_idd=deepcopy(class_id)
   #  class_idd_old=deepcopy(class_idd)
   #  Stats_old = deepcopy(Stats)
   #  counts_old=deepcopy(counts)
@@ -17,7 +17,7 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
         old_class_ids= class_idd[i]
 
         # temporary variables
-        tempstats = deepcopy(Stats);
+        tempstats = deepcopy(stats);
         class_idd_temp = class_idd-0
         K_plus_temp = K_plus-0
         tempcounts = counts-0
@@ -94,10 +94,10 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
         # pick the new source
         cdf = cumsum(posterior)
         rn = rand()
-        
-        new_class_ids = find(cdf.>rn)[1]
-        
-    tempcounts[new_class_ids] = tempcounts[new_class_ids]+1
+
+        new_class_ids = find(cdf.>rn)[1]  
+
+        tempcounts[new_class_ids] = tempcounts[new_class_ids]+1
     tempallcounts[new_class_ids] = tempallcounts[new_class_ids]+1
         newc=false
         if new_class_ids .== (K_plus_temp+1)
@@ -107,14 +107,12 @@ function crp_gibbs(class_idd,consts,priors,Stats,allcounts,counts,K_plus,alpha,p
 
         # update things either the new class id is != the old class without any re-arrangements, or it's uneuqal to K_plus+1 with re-arragement -- else we can jsut keep everything as is...
         if (old_class_ids .!= new_class_ids && dels==false)||(newc==false && dels==true)
-
             # record the new source and update variables to values of temporary variables
             class_idd_temp[i] = new_class_ids
             class_idd =class_idd_temp-0
             K_plus = K_plus_temp-0
             counts = tempcounts-0
             allcounts = tempallcounts-0
-            
             tempstats[new_class_ids]=update_stats(tempstats[new_class_ids],y,allcounts[new_class_ids],1)
 
                     

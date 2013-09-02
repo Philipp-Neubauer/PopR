@@ -1,10 +1,12 @@
 function  DPM_sampler_fix(inp::Array{Any,1})
 
-num_iters = inp[1]
-thin = inp[2]
-stats = inp[3]
-priors = inp[4]
-consts = inp[5]
+datas = inp[1]
+num_iters = inp[2]
+thin = inp[3]
+stats = inp[4]
+priors = inp[5]
+consts = inp[6];
+CP=inp[7] 
     
     require(string(CP,"/Julia_code_support.jl"))
     require(string(CP,"/gibbs_crp_fix.jl"))
@@ -26,8 +28,8 @@ consts = inp[5]
     alpha_record = Array(Float,nit)
     p_under_prior_alone = Array(Float,consts.N);
 
-    consts,stats,allcounts = preallocate(consts,stats,priors,allcounts)   
-    stats,allcounts,counts = preclass(consts,stats,priors,allcounts,counts,class_id)
+    consts,stats,allcounts = preallocate(consts,stats,priors,allcounts);
+    stats,allcounts,counts = preclass(consts,stats,priors,allcounts,counts,class_id);
     tic()
     totaltime=0
     
@@ -38,13 +40,13 @@ consts = inp[5]
         p_under_prior_alone = p_for_1(consts,priors,consts.N,consts.datas,p_under_prior_alone)
  # run gibbs bit      
       
-        (class_id,K_plus,stats,counts,allcounts) = crp_gibbs(class_id,consts,priors,stats,allcounts,counts,K_plus,alpha,p_under_prior_alone)
+        (class_id,K_plus,stats,counts,allcounts) = crp_gibbs(class_id,consts,priors,stats,allcounts,counts,K_plus,alpha,p_under_prior_alone);
 
        
         # run split-merge bit
         
         #if iter>10
-            (class_id,K_plus,stats,counts,allcounts) = split_merge(class_id,consts,priors,stats,counts,allcounts,K_plus,alpha,p_under_prior_alone)
+           (class_id,K_plus,stats,counts,allcounts) = split_merge(class_id,consts,priors,stats,counts,allcounts,K_plus,alpha,p_under_prior_alone);
         # end
          
        

@@ -51,10 +51,10 @@ writedlm("CP.csv",{cps})
 np = nprocs()
 nit=int((np)*numiters/thin);
 
-class_ids=Array(Float,(size(datas,2),nit))
-k_0s=Array(Float,nit)
-K_record=Array(Int8,nit)
-alpha_record=Array(Float,nit)
+class_ids=Array(Float,(size(datas,2),nit));
+k_0s=Array(Float,nit);
+K_record=Array(Int8,nit);
+alpha_record=Array(Float,nit);
 
 #################################################
 ######### --- RUN IT ----########################
@@ -64,10 +64,10 @@ if bl.==1
 
     @everywhere require(string(CP,"/DPM_sampler_fix.jl"))
     
-    inp = {numiters,thin,stats,priors,consts,CP};
+    inp = {datas,numiters,thin,stats,priors,consts,CP};
     M = {inp for i=1:np};#need to put np-1 again for parallel
         
-    outs = pmap(DPM_sampler_fix,M)
+    outs = pmap(DPM_sampler_fix,M);
    
 else
 
