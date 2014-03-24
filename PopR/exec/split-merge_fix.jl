@@ -1,4 +1,4 @@
-function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha,p_under_prior_alone)
+function split_merge(class_idd,consts,priors,stats,counts,allcounts,K_plus,alpha,p_under_prior_alone)
 
    classids_temp = copy(class_idd)
     # choose individuals at random
@@ -140,7 +140,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
             clik=clik+clikelihood
             cns=cns+1
 
-            cstats = update_Stats(cstats,y_k,cns,1)
+            cstats = update_stats(cstats,y_k,cns,1)
                              
             # calculate individual set likelihoods
                 
@@ -148,7 +148,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
 #println(sstats[classhelp[o]])
                 sstats[classhelp[o]],likelihood[o] = getlik(consts,priors,sstats[classhelp[o]],y_k,n_S[o]-1,true,true)
                 setlik=setlik+likelihood[o]
-                sstats[classhelp[o]] = update_Stats(sstats[classhelp[o]],y_k,n_S[o],1)
+                sstats[classhelp[o]] = update_stats(sstats[classhelp[o]],y_k,n_S[o],1)
                 continue
             end
             
@@ -172,7 +172,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 
             n_S[classhelp[o]] = n_S[classhelp[o]]+1
 
-            sstats[classhelp[o]] = update_Stats(sstats[classhelp[o]],y_k,n_S[classhelp[o]],1)
+            sstats[classhelp[o]] = update_stats(sstats[classhelp[o]],y_k,n_S[classhelp[o]],1)
                                               
         end
 
@@ -192,7 +192,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 counts[merga] = n_i + n_j
                 allcounts[merga] = allcounts[merga]+nmerge
                
-                Stats[merga] = getlik(consts,priors,cstats,0,allcounts[merga],false,true)
+                stats[merga] = getlik(consts,priors,cstats,0,allcounts[merga],false,true)
         
                 # then delete old table
                 
@@ -209,18 +209,18 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 allcounts[1:K_plus] = allcounts[hits]
                 allcounts[K_plus+1] = 0
                 
-                Stats[1:K_plus] =  Stats[hits]
-                Stats[K_plus+1] =  0
+                stats[1:K_plus] =  stats[hits]
+                stats[K_plus+1] =  0
 
                 else
                 
-                    Stats.means[:,antimerga] = consts.orgmeans[:,antimerga];
-                    Stats.sum_squares[:,:,antimerga] = consts.orgsum_squares[:,:,antimerga];
+                    stats.means[:,antimerga] = consts.orgmeans[:,antimerga];
+                    stats.sum_squares[:,:,antimerga] = consts.orgsum_squares[:,:,antimerga];
                     counts[antimerga] = 0;
                     allcounts[antimerga] = consts.ns[antimerga];
                                        
-                    Stats.log_det_cov[antimerga] = consts.orglog_det_cov[antimerga];
-                    Stats.inv_cov[:,:,antimerga] = consts.orginv_cov[:,:,antimerga];
+                    stats.log_det_cov[antimerga] = consts.orglog_det_cov[antimerga];
+                    stats.inv_cov[:,:,antimerga] = consts.orginv_cov[:,:,antimerga];
                     
                     K_plus = sum(allcounts.!=0);
                 
@@ -276,7 +276,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 clik=clik+(clikelihood)
                 cns=cns+1
 
-                cstats = update_Stats(cstats,y_k,cns,1)
+                cstats = update_stats(cstats,y_k,cns,1)
                 
                 # calculate individual set likelihoods
 
@@ -288,7 +288,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 if o.==1 || o.==2                 
                     
                     sstats[o],likelihood[o] = getlik(consts,priors,sstats[o],y_k,n_S[o]-1,true,true)
-                    sstats[o] = update_Stats(sstats[o],y_k,n_S[o],1)
+                    sstats[o] = update_stats(sstats[o],y_k,n_S[o],1)
                     setlik=setlik+likelihood[o]
                     continue                   
                 end
@@ -312,7 +312,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                     
                     n_S[1] = n_S[1]+1
                     
-                    sstats[1] = update_Stats(sstats[1],y_k,n_S[1],1)
+                    sstats[1] = update_stats(sstats[1],y_k,n_S[1],1)
                     
                 else # S_j is chosen
                     
@@ -321,7 +321,7 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                     classids_temp[k]=K_plus+1
                     n_S[2] = n_S[2]+1
                     
-                    sstats[2] = update_Stats(sstats[2],y_k,n_S[2],1)
+                    sstats[2] = update_stats(sstats[2],y_k,n_S[2],1)
                     
                 end
                 
@@ -349,8 +349,8 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
                 allcounts[c_j] = n_S[1]
                 allcounts[K_plus+1] = n_S[2]
 
-                Stats[c_j] = getlik(consts,priors,sstats[1],0,allcounts[c_j],false,true)
-                Stats[K_plus+1] = getlik(consts,priors,sstats[2],0,allcounts[K_plus+1],false,true)
+                stats[c_j] = getlik(consts,priors,sstats[1],0,allcounts[c_j],false,true)
+                stats[K_plus+1] = getlik(consts,priors,sstats[2],0,allcounts[K_plus+1],false,true)
                 
                 K_plus=K_plus+1
                 class_idd=classids_temp
@@ -358,6 +358,6 @@ function split_merge(class_idd,consts,priors,Stats,counts,allcounts,K_plus,alpha
             
         end
 
-       return(class_idd,K_plus,Stats,counts,allcounts)
+       return(class_idd,K_plus,stats,counts,allcounts)
         
 end

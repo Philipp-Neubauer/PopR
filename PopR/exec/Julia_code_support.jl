@@ -1,6 +1,6 @@
 using Distributions
 
-function preclass(consts,Stats,priors,allcounts,counts,class_id)
+function preclass(consts,stats,priors,allcounts,counts,class_id)
 
     dists=Array(Float,consts.sources)
     for i=1:consts.N
@@ -16,61 +16,61 @@ function preclass(consts,Stats,priors,allcounts,counts,class_id)
         
         n = allcounts[choose]
                
-        Stats.means[:,choose] = Stats.means[:,choose] + (1/n)*(consts.datas[:,i]-Stats.means[:,choose]);
-        Stats.sum_squares[:,:,choose] = Stats.sum_squares[:,:,choose] + consts.datas[:,i]*consts.datas[:,i]'
+        stats.means[:,choose] = stats.means[:,choose] + (1/n)*(consts.datas[:,i]-stats.means[:,choose]);
+        stats.sum_squares[:,:,choose] = stats.sum_squares[:,:,choose] + consts.datas[:,i]*consts.datas[:,i]'
         
         
         k_n = priors.k_0+n;
         v_n = priors.v_0+n;
         
-        zm_Y = Stats.means[:,choose]-priors.mu_0
-        SS = Stats.sum_squares[:,:,choose]-n*(Stats.means[:,choose]*Stats.means[:,choose]')
+        zm_Y = stats.means[:,choose]-priors.mu_0
+        SS = stats.sum_squares[:,:,choose]-n*(stats.means[:,choose]*stats.means[:,choose]')
         lambda_n = priors.lambda_0 + SS + priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
         Sigma = lambda_n*(k_n+1)/(k_n*(v_n-consts.D+1))
     
-        Stats.inv_cov[:,:,choose] = cholfact(Sigma)[:U]
+        stats.inv_cov[:,:,choose] = cholfact(Sigma)[:U]
       
-        Stats.log_det_cov[choose] = sum(log(diag(Stats[choose].inv_cov)))    
+        stats.log_det_cov[choose] = sum(log(diag(stats[choose].inv_cov)))    
     end
 
-    return (Stats,allcounts,counts)
+    return (stats,allcounts,counts)
 end
 
 # pre-allocate stats and consts
 
 
-function preallocate(consts,Stats,priors,allcounts)
+function preallocate(consts,stats,priors,allcounts)
 
     is=sort(unique(consts.labels));
 
    for i=1:consts.sources
     
-        Stats.means[:,i] = mean(consts.baseline[:,consts.labels.==is[i]],2)
-        consts.orgmeans[:,i] =  Stats.means[:,i]
+        stats.means[:,i] = mean(consts.baseline[:,consts.labels.==is[i]],2)
+        consts.orgmeans[:,i] =  stats.means[:,i]
         allcounts[i] = size(consts.baseline[:,consts.labels.==is[i]],2)
         consts.ns[i] = size(consts.baseline[:,consts.labels.==is[i]],2)
         consts.orgsum_squares[:,:,i] = (baseline[:,consts.labels.==is[i]]-repmat(mean(consts.baseline[:,consts.labels.==is[i]],2),1,allcounts[i]))*(consts.baseline[:,consts.labels.==is[i]]-repmat(mean(consts.baseline[:,consts.labels.==is[i]],2),1,allcounts[i]))'
-        Stats.sum_squares[:,:,i] =  consts.orgsum_squares[:,:,i]
+        stats.sum_squares[:,:,i] =  consts.orgsum_squares[:,:,i]
     
-        consts.orgsum_squares[:,:,i] = consts.orgsum_squares[:,:,i]+consts.ns[i]*(Stats.means[:,i]*Stats.means[:,i]');
-        Stats.sum_squares[:,:,i] = Stats.sum_squares[:,:,i]+consts.ns[i]*(Stats.means[:,i]*Stats.means[:,i]');
+        consts.orgsum_squares[:,:,i] = consts.orgsum_squares[:,:,i]+consts.ns[i]*(stats.means[:,i]*stats.means[:,i]');
+        stats.sum_squares[:,:,i] = stats.sum_squares[:,:,i]+consts.ns[i]*(stats.means[:,i]*stats.means[:,i]');
     
         n = size(consts.baseline[:,consts.labels.==is[i]],2)
         k_n = priors.k_0+n
         v_n = priors.v_0+n
    
-        zm_Y = Stats.means[:,i]-priors.mu_0
-        SS = Stats.sum_squares[:,:,i]-n*(Stats.means[:,i]*Stats.means[:,i]')
+        zm_Y = stats.means[:,i]-priors.mu_0
+        SS = stats.sum_squares[:,:,i]-n*(stats.means[:,i]*stats.means[:,i]')
         lambda_n = priors.lambda_0 + SS +  priors.k_0*n/(priors.k_0+n)*(zm_Y)*(zm_Y)'
         Sigma = lambda_n*(k_n+1)/(k_n*(v_n-consts.D+1))
     
-        Stats.inv_cov[:,:,i] = cholfact(Sigma)[:U]
-        consts.orginv_cov[:,:,i] =  Stats.inv_cov[:,:,i]
-        Stats.log_det_cov[i] = sum(log(diag(Stats[i].inv_cov)))
-        consts.orglog_det_cov[i] =  Stats.log_det_cov[i]
+        stats.inv_cov[:,:,i] = cholfact(Sigma)[:U]
+        consts.orginv_cov[:,:,i] =  stats.inv_cov[:,:,i]
+        stats.log_det_cov[i] = sum(log(diag(stats[i].inv_cov)))
+        consts.orglog_det_cov[i] =  stats.log_det_cov[i]
     end
 
-    return(consts,Stats,allcounts)
+    return(consts,stats,allcounts)
 
 end
 
@@ -78,28 +78,28 @@ end
 
 # update statistics Normal case
 
-function update_Stats(Stats::NORM,y,counts,m)
+function update_stats(stats::NORM,y,counts,m)
 
     if m<0
-        Stats.means = (1/counts)*((counts+1)*Stats.means- y);
-        Stats.sum_squares = Stats.sum_squares - y*y'
+        stats.means = (1/counts)*((counts+1)*stats.means- y);
+        stats.sum_squares = stats.sum_squares - y*y'
     else
-        Stats.means=  Stats.means+ (1/counts)*(y- Stats.means);
-        Stats.sum_squares =  Stats.sum_squares + y*y'
+        stats.means=  stats.means+ (1/counts)*(y- stats.means);
+        stats.sum_squares =  stats.sum_squares + y*y'
     end
-    return Stats
+    return stats
 end
 
 
 # student log lik
-function getlik(consts::STUD,priors::MNIW,Stats::NORM,y,n,lik::Bool,suffs::Bool)
+function getlik(consts::STUD,priors::MNIW,stats::NORM,y,n,lik::Bool,suffs::Bool)
          
-    m_Y = Stats.means
-    mu = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*Stats.means
+    m_Y = stats.means
+    mu = priors.k_0/(priors.k_0+n)*priors.mu_0 + n/(priors.k_0+n)*stats.means
     k_n = priors.k_0+n
     v_n = priors.v_0+n
 
-    S = (Stats.sum_squares - n* Stats.means*Stats.means')
+    S = (stats.sum_squares - n* stats.means*stats.means')
     zm_Y = m_Y-priors.mu_0
     lambda_n = priors.lambda_0 + S  +  priors.k_0*n/(priors.k_0+n)*zm_Y*zm_Y'
 
@@ -113,28 +113,28 @@ function getlik(consts::STUD,priors::MNIW,Stats::NORM,y,n,lik::Bool,suffs::Bool)
     
     if suffs
 
-        Stats.inv_cov  = cholfact(Sigma)[:U]
-        Stats.log_det_cov = sum(log(diag(Stats.inv_cov)))
+        stats.inv_cov  = cholfact(Sigma)[:U]
+        stats.log_det_cov = sum(log(diag(stats.inv_cov)))
         
         if lik
             u = y-mu
 #println(u)
             
-            z = Cholesky(Stats.inv_cov,'U') \ u  # This is equivalent to inv(cov) * u, but much faster
+            z = Cholesky(stats.inv_cov,'U') \ u  # This is equivalent to inv(cov) * u, but much faster
             #println(z)
            # print(z,'\n')
-            lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - Stats.log_det_cov-(vd/2)*log(1+(1/v)*dot(u,z))
+            lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - stats.log_det_cov-(vd/2)*log(1+(1/v)*dot(u,z))
                   
-            return Stats,lp
+            return stats,lp
         else
-            return Stats
+            return stats
         end
     else
 
          u = y-mu
-         z = Cholesky(Stats.inv_cov,'U') \ u  # This is equivalent to inv(cov) * u, but much faster
+         z = Cholesky(stats.inv_cov,'U') \ u  # This is equivalent to inv(cov) * u, but much faster
                  
-        lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - Stats.log_det_cov-(vd/2)*log(1+(1/v)*dot(u,z))
+        lp = consts.pc_gammaln_by_2[vd] - (consts.pc_gammaln_by_2[v] + d2*consts.pc_log[v] + d2*consts.pc_log_pi) - stats.log_det_cov-(vd/2)*log(1+(1/v)*dot(u,z))
     
         return lp
     end

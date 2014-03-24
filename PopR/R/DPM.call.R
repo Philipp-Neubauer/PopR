@@ -1,28 +1,33 @@
 DPM.call <-
 function(datas=NULL,baseline=NULL,labels=NULL,learn=FALSE,iters=1000,thin=10,np=1,
-             typeof='N',path.to.julia=getwd(),call_DPM_path=system.file("exec",package = "PopR"))             
+             typeof='N',path.to.julia=getwd(),call_DPM_path=system.file("exec",package = "PopR"),a.0=NULL,b.0=NULL,ak.0=NULL,bk.0=NULL,v.0=NULL,lambda.0=NULL)             
 {
-  write.csv(file='single_priors.csv',c(a.0,b.0,k.0,ak.0,bk.0,v.0,mu.0))
-  write.csv(file='matrix_priors.csv',lambda.0)
-  write.csv(file='datas.csv',datas)
+  # initial value for certainty about the mean...
+  k.0  = 1
+  # initial value for prior mean
+  mu.0 = colMeans(datas)
+
+  write.matrix(file='single_priors.csv',c(a.0,b.0,k.0,ak.0,bk.0,v.0,mu.0),sep=',')
+  write.matrix(file='matrix_priors.csv',lambda.0,sep=',')
+  write.matrix(file='datas.csv',datas,sep=',')
 
   
   bl=ifelse(learn==F,0,1)
   
   if (learn){
-    write.csv(file='baseline.csv',baseline)
-    write.csv(file='labels.csv',labels)
+    write.matrix(file='baseline.csv',baseline,sep=',')
+    write.matrix(file='labels.csv',labels,sep=',')
   }
   
   if (.Platform$OS.type == "unix")
     {
       exec=file.path(path.to.julia,'./julia')
-      command=paste(exec,'-p',np,file.path(call_DPM_path,'call_DPM.jl'),bl,iters,thin,typeof,getwd())
+      command=paste(exec,'-p',1,file.path(call_DPM_path,'call_DPM.jl'),bl,iters,thin,typeof,getwd(),call_DPM_path)
       system(command)
   } else
     {
       exec=file.path(path.to.julia,'/julia/julia.bat')
-      command=c('-p',np,file.path(call_DPM_path,'call_DPM.jl'),bl,iters,thin,typeof,getwd())
+      command=c('-p',1,file.path(call_DPM_path,'call_DPM.jl'),bl,iters,thin,typeof,getwd(),call_DPM_path)
       system2(exec,command)
   }    
   

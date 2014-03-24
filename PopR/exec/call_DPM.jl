@@ -8,14 +8,21 @@ Typeof=ARGS[4]
 
 cd(ARGS[5])
 
+cps = ARGS[6]
+
+writedlm("CP.csv",{cps})
+
+@everywhere CP=readdlm("CP.csv")
+
+@everywhere CP=CP[1]
 
 @everywhere typealias Float Float64
 
-@everywhere datas=readdlm("datas.csv",",",Float)[2:end,2:end]'
+@everywhere datas=readdlm("datas.csv",',',Float)'
 
-@everywhere single_priors = readdlm("single_priors.csv",",",Float)[2:end,2]
+@everywhere single_priors = readdlm("single_priors.csv",',',Float)
     
-@everywhere matrix_priors = readdlm("matrix_priors.csv",",",Float)[2:end,2:end]
+@everywhere matrix_priors = readdlm("matrix_priors.csv",',',Float)
 
 
 @everywhere const pc_max_ind=int(1e5)
@@ -27,12 +34,12 @@ cd(ARGS[5])
      
     if bl.==1
     
-        @everywhere require("fixtype.jl")
+        @everywhere require(string(CP,"/fixtype.jl"))
 
     else
 
 
-        @everywhere require("define_types.jl")
+        @everywhere require(string(CP,"/define_types.jl"))
       
     end
  
@@ -42,12 +49,12 @@ cd(ARGS[5])
 #################################################
     
 np = nprocs()
-nit=int((np-1)*numiters/thin);
+nit=int((np)*numiters/thin);
 
-class_ids=Array(Float,(size(datas,2),nit))
-k_0s=Array(Float,nit)
-K_record=Array(Int8,nit)
-alpha_record=Array(Float,nit)
+class_ids=Array(Float,(size(datas,2),nit));
+k_0s=Array(Float,nit);
+K_record=Array(Int8,nit);
+alpha_record=Array(Float,nit);
 
 #################################################
 ######### --- RUN IT ----########################
@@ -55,21 +62,21 @@ alpha_record=Array(Float,nit)
 
 if bl.==1
 
-    @everywhere require("DPM_sampler_fix.jl")
+    @everywhere require(string(CP,"/DPM_sampler_fix.jl"))
     
-    inp = {numiters,thin,Stats,priors,consts}
-    M = {inp for i=1:np-1}
+    inp = {datas,numiters,thin,stats,priors,consts,CP};
+    M = {inp for i=1:np};#need to put np-1 again for parallel
         
-    outs = pmap(DPM_sampler_fix,M)
+    outs = pmap(DPM_sampler_fix,M);
    
 else
 
-    @everywhere require("DPM_sampler.jl")
+    @everywhere require(string(CP,"/DPM_sampler.jl"))
     
-    inp = {datas,numiters,thin,Stats,priors,consts};
-    M = {inp for i=1:np-1};
+    inp = {datas,numiters,thin,stats,priors,consts,CP};
+    M = {inp for i=1:np}; #need to put np-1 again for parallel
         
-    outs = pmap(DPM_sampler,M)
+    outs = pmap(DPM_sampler,M);
    
 end
 

@@ -2,7 +2,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
 
     
     
-    require("Julia_code_support.jl")
+    require(string(CP,"/Julia_code_support.jl"))
 
     # initialize structures
 
@@ -19,8 +19,8 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
     proba=Array(Float,(consts.N,consts.sources))
     probas=Array(Float,(consts.N,consts.sources,nit))
     
-    consts,Stats,allcounts = preallocate(consts,Stats,priors,allcounts)
-    Stats,allcounts,counts = preclass(consts,Stats,priors,allcounts,counts,class_id)
+    consts,stats,allcounts = preallocate(consts,stats,priors,allcounts)
+    stats,allcounts,counts = preclass(consts,stats,priors,allcounts,counts,class_id)
    
     tic()
     totaltime=0
@@ -32,7 +32,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
         for i=1:consts.N
             for j=1:consts.sources
 
-                predlik[j,i] = getlik(consts,priors,Stats[j],consts.datas[:,i],consts.ns[j],true,false)
+                predlik[j,i] = getlik(consts,priors,stats[j],consts.datas[:,i],consts.ns[j],true,false)
 
             end
         end
@@ -54,10 +54,10 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
                     # take out in from stats if uncond
                     if class_id[i] == j
                         allcounts[j] = allcounts[j]-1
-                        Stats[j] = update_Stats(Stats[j],consts.datas[:,i],allcounts[j],-1)
+                        stats[j] = update_stats(stats[j],consts.datas[:,i],allcounts[j],-1)
                     end
                     
-                    (dum,predlik[j,i]) = getlik(consts,priors,Stats[j],consts.datas[:,i],allcounts[j],true,true)
+                    (dum,predlik[j,i]) = getlik(consts,priors,stats[j],consts.datas[:,i],allcounts[j],true,true)
                   
                 end
                                
@@ -73,7 +73,7 @@ function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
             # add to stats if uncond
             if cond == 0
                 allcounts[class_id[i]] = allcounts[class_id[i]] + 1    
-                Stats[class_id[i]]=update_Stats(Stats[class_id[i]],consts.datas[:,i],allcounts[class_id[i]],1)
+                stats[class_id[i]]=update_stats(stats[class_id[i]],consts.datas[:,i],allcounts[class_id[i]],1)
             end
         end 
        

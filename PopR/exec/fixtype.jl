@@ -3,16 +3,16 @@ import Base.setindex!
 import Base.copy
 
   
-        baseline=readdlm("baseline.csv",",",Float)[2:end,2:end]'
+        baseline=readdlm("baseline.csv",',',Float)'
 
-        label = readdlm("labels.csv",",",Float)[2:end,2]
+        label = readdlm("labels.csv",',',Float)
         label=int(label)  
         
 
         uniqs=sort(unique(label))
         labels=Array(Int,length(label))
         for i=1:length(uniqs)
-            labels[label.==uniqs[i]]=i
+            labels[(label.==uniqs[i])[:,1]]=i
         end
 
         immutable STUD
@@ -64,7 +64,7 @@ import Base.copy
     end
     
      # set up NORM type stats
-    Stats=NORM(zeros(Float,(D,N)),zeros(Float,(D,D,N)),Array(Float,(D,D,N)),Array(Float,(N)))
+    stats=NORM(zeros(Float,(D,N)),zeros(Float,(D,D,N)),Array(Float,(D,D,N)),Array(Float,(N)))
 
 # define how to copy
     function copy(A::NORM)

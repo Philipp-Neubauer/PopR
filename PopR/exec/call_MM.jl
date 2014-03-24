@@ -8,20 +8,27 @@ Typeof=ARGS[4]
 
 cd(ARGS[5])
 
+cps = ARGS[6]
+
+CP = ARwritedlm("CP.csv",{cps})
+
+@everywhere CP=readdlm("CP.csv")
+
+@everywhere CP=CP[1]
 
 @everywhere typealias Float Float64
 
-@everywhere datas=readdlm("datas.csv",",",Float)[2:end,2:end]'
+@everywhere datas=readdlm("datas.csv",',',Float)'
 
-@everywhere single_priors = readdlm("single_priors.csv",",",Float)[2:end,2]
+@everywhere single_priors = readdlm("single_priors.csv",',',Float)
     
-@everywhere matrix_priors = readdlm("matrix_priors.csv",",",Float)[2:end,2:end]
+@everywhere matrix_priors = readdlm("matrix_priors.csv",',',Float)
 
 
 @everywhere const pc_max_ind=int(1e5)
 @everywhere const (D, N) = size(datas)
     
-@everywhere    require("fixtype.jl")   
+@everywhere    require(string(CP,"/fixtype.jl"))   
  
 
 #################################################
@@ -38,7 +45,7 @@ probas=Array(Float,(size(datas,2),consts.sources))
 ######### --- RUN IT ----########################
 #################################################
 
-@everywhere require("MM_sampler.jl")
+@everywhere require(string(CP,"/MM_sampler.jl"))
 #@everywhere load("define_types.jl")
 
 

@@ -43,7 +43,7 @@ type NORM
 end
 
 # set up NORM type stats
-Stats=NORM(zeros(Float,(D,N)),zeros(Float,(D,D,N)),Array(Float,(D,D,N)),Array(Float,(N)))
+stats=NORM(zeros(Float,(D,N)),zeros(Float,(D,D,N)),Array(Float,(D,D,N)),Array(Float,(N)))
 
 # define how to access subsets of individuals
 

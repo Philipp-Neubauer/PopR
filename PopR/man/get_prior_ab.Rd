@@ -2,10 +2,10 @@
 \alias{get_prior_ab}
 
 \title{
-matches the gamma parameters a and b to produce an implicit prior over the number of instances (sources) k that best resembles the explicit prior described by g 
+produce an implicit prior over the number of instances (sources) k
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+matches the gamma parameters a and b to produce an implicit prior over the number of instances (sources) k that best resembles the explicit prior described by g
 }
 \usage{
 get_prior_ab(n, g = "uniform", mu = NULL, var = NULL)
@@ -30,27 +30,24 @@ Produces a plot of the explicit/original prior and implicit/induced prior.
 }
 \value{
   \item{a}{
-Gamma shape parameter to be used as prior in \code{\link{call_DPM}}
-}}
+Gamma shape parameter to be used as prior in \code{\link{DPM.call}}
+}
     \item{b}{
-Gamma scale parameter to be used as prior in \code{\link{call_DPM}}
-}}
+Gamma scale parameter to be used as prior in \code{\link{DPM.call}}
+}
 }
 \references{
-%% ~put references to the literature/web site here ~
+P. Neubauer, J.S. Shima and S.E. Swearer - Inferring dispersal and migrations from incomplete geochemical baselines: analysis of population structure using Bayesian infinite mixture models. DOI: 10.1111/2041-210X.12076
+
+\url{http://onlinelibrary.wiley.com/doi/10.1111/2041-210X.12076/abstract}
 }
 \author{
 Philipp Neubauer
 }
-\note{
-%%  ~~further notes~~
-}
+
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{DPM.call}}
 }
-
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

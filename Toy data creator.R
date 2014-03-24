@@ -2,13 +2,10 @@
 
 # DPM toolbox by P.Neubauer -  distributed under GNU GPL licence V3.
 
-require(MASS)
-require(ape)
-source("Julia_call_function.R")
-source("elink.call.R")
-source("convert_Z_to_phylo.R")
-source("prior_match.R")
-setwd("/home/philbobsqp/Work//Projects/Papersampler")
+require(PopR)
+
+# set path for the julia executable 
+ptj = '/usr/local/Cellar/julia/HEAD/bin'
 
 # set color palette to colorblind friendly colors
 cbPalette = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#FF796B","#999999", "#F0E442", "#0072B2", "#D55E00")
@@ -19,9 +16,9 @@ cbPalette = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#FF796B","#999999", "
 
 #  multi-normal source distributions - in an ideal world...
 
-num.sources = 4  # 'true' number of sources
+num.sources = 3  # 'true' number of sources
 num.elements = 5 # number of elements
-num.per.source = 30 # individuals per source
+num.per.source = 15 # individuals per source
 
 sep = 24 # separation of means
 
@@ -85,10 +82,7 @@ bk.0 = 1
 
 ak.0*bk.0
 
-# initial value for certainty about the mean...
-k.0  = 1
-# initial value for prior mean
-mu.0 = colMeans(data.DPM)
+
 
 # number of iterations per processor
 num.iters=1000
@@ -96,7 +90,7 @@ num.iters=1000
 thin=1
 
 # number of parallel processes (chains) to run (recommended to keep at <= core of CPU) set to np + 1 since one instance only calls and summarizes the work...
-np=2+1
+np=1+1
 
 # total number of kept iterations
 niter=(np-1)*num.iters/thin
@@ -108,7 +102,7 @@ burnin = 100  # number of (kept!) iterations to discard
 # there will most likely be no output on the terminal in windows until the very end. 
 #this works better in Linux (OSX?)where progress is displayed continously - K^+ is the estimated number of sources
 
-output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia='/home/philbobsqp/Work/julia')
+output = DPM.call(datas=data.DPM,iters=num.iters,thin=thin,np=np, path.to.julia=ptj,a.0=a.0,b.0=b.0,ak.0=ak.0,bk.0=bk.0,v.0=v.0,lambda.0=lambda.0)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(output$class_id)
@@ -120,7 +114,9 @@ classes = as.data.frame(output$K_record)
 
 # check if the markov chain for number of sources has converged and is mixing:
 lpc=niter/(np-1)
-keeps = rep((burnin+1):(niter/(np-1)),np-1)+rep(0:(np-2)*lpc,each=niter/2-burnin)
+if (np>2)
+  {keeps = rep((burnin+1):(niter/(np-1)),np-1)+rep(0:(np-2)*lpc,each=niter/2-burnin)} else 
+  {keeps = rep((burnin+1):(niter/(np-1)),np-1)}
 
 plot(classes[keeps,1]) # number of sources
 plot(output$alpha_record[keeps,1]) #concentration parameter 
@@ -135,7 +131,7 @@ hist(classes[keeps,1],bins,col='grey',xlab='number of sources',main='',freq=F)
 # now create the exact linkage tree and display
 
 S=class.id[,keeps]
-Z = elink.call(S, path.to.julia='/home/philbobsqp/Work/julia')$tree
+Z = elink.call(S, path.to.julia=ptj)$tree
 Zp <- as.phylogg(Z,n,rep('o',n))
 
 #pdf('./Plots/tree very easy example.pdf')
@@ -177,7 +173,7 @@ num.per.source = rep(50,num.sources) # number of samples per source
 num.per.source = c(num.per.source,sample.int(10,extra.sources)+5) # number of samples per extra.sources
 as=num.sources+extra.sources
 
-sep = 4 # separation of means
+sep = 8 # separation of means
 means = mvrnorm(as,rep(0,num.elements),diag(rep(sep,num.elements)))
 
 data=matrix(NA,sum(num.per.source),num.elements)
@@ -226,22 +222,7 @@ baselabels = label[bix]
 mixed = t(apply(mixed,1,function(x){x-colMeans(baseline)}))
 baseline = t(apply(baseline,1,function(x){x-colMeans(baseline)}))
 
-## backups for testing
 
-#mix_o = mixed 
-#base_0 = baseline
-
-mixed_t = mixed%*%scores
-baseline_t = baseline%*%scores
-#num.elements=ncol(mixed)
-
-# rounds are baseline, triangles are mixed sample
-
-plot(baseline_t[,1],baseline_t[,2],col=cbPalette[baselabels],pch=16)
-points(mixed_t[,1],mixed_t[,2],col=cbPalette[mixedlabels],pch=17)
-
-#mixed = mix_o
-#baseline=base_0 
 num.elements=ncol(mixed)
 ## done
 
@@ -268,14 +249,11 @@ for (i in 1:num.sources){
   var=var+(1/num.sources)*solve(vars[[i]])
 }
 lambda.0 = solve(var)
+dimnames(lambda.0)<-NULL
 
 # prior for k_0 - small values are uninformative, but may lead to very poor mixing and numerical instability.
 ak.0 = 1
 bk.0 = 1
-# initial k_0...is estimated so no need to change
-k.0  = 1
-# initial prior mean...is estimated so no need to change
-mu.0 = colMeans(baseline)
 
 # numebr of parallel processing jobs - set to a max of number of cores of the CPU+1(the +1 just calls the cumputing instances)
 np=1+1
@@ -293,7 +271,7 @@ niter=(np-1)*num.iters/thin
 # or is moved to a different directory, the 
 #path to the executeable must be provided (and changed in the line below), 
 #else the working directory is taken as default
-outputs =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
+outputs =DPM.call(datas=mixed,learn=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia=ptj,a.0=a.0,b.0=b.0,ak.0=ak.0,bk.0=bk.0,v.0=v.0,lambda.0=lambda.0)
 
 # these are the source allocations for all kept MCMC iterations
 class.id = as.data.frame(outputs$class_id)
@@ -302,7 +280,9 @@ classes = as.data.frame(outputs$K_record)
 
 # check if the markov chain for number of sources has converged and is mixing:
 lpc=niter/(np-1)
-keeps = rep((burnin+1):(niter/(np-1)),np-1)+rep(0:(np-2)*lpc,each=niter/2-burnin)
+if (np>2)
+{keeps = rep((burnin+1):(niter/(np-1)),np-1)+rep(0:(np-2)*lpc,each=niter/2-burnin)} else 
+{keeps = rep((burnin+1):(niter/(np-1)),np-1)}
 
 plot(classes[keeps,1]) # number of sources
 plot(outputs$alpha_record[keeps,1]) #concentration parameter 
@@ -322,7 +302,7 @@ for (i in num.sources:1){
 S.fix= rbind(rep(i,niter-burnin),S.fix)}
 
 # make tree
-Z = elink.call(S.fix,'/home/philbobsqp/Work/julia')$tree
+Z = elink.call(S.fix,ptj)$tree
 
 # convert to ape phylogeny for plotting
 N=length(mixedlabels)
@@ -367,14 +347,14 @@ mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
 # compare against mixture models
 
 # conditional analysis
-cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
+cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia=ptj,v.0= v.0,lambda.0=lamda.0)
 
 cond.class.id = as.data.frame(cond.output$class_id)
 cc.fix=cond.class.id[,keeps]
 for (i in num.sources:1){
 cc.fix= rbind(rep(i,niter-burnin),cc.fix)}
 
-Z = elink.call(cc.fix,path.to.julia='/home/philbobsqp/Work/julia')$tree
+Z = elink.call(cc.fix,path.to.julia=ptj)$tree
 N=length(mixedlabels)
 Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
 
@@ -386,14 +366,14 @@ plot.phylo(reorder(Zp, order = "c")
 
 
 # unconditional analysis
-uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia')
+uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0=v.0,lambda.0=lambda.0)
 
 ucond.class.id = as.data.frame(uncond.output$class_id)
 uc.fix=ucond.class.id[,keeps]
 for (i in num.sources:1){
 uc.fix= rbind(rep(i,niter-burnin),uc.fix)}
 
-Z = elink.call(uc.fix,path.to.julia='/home/philbobsqp/Work/julia')$tree
+Z = elink.call(uc.fix,path.to.julia=ptj)$tree
 N=length(mixedlabels)
 Zp <- as.phylogg(Z,N+num.sources,c(rep('X',num.sources),rep('o',N)))
 

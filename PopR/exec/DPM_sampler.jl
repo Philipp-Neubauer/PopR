@@ -3,18 +3,18 @@ function  DPM_sampler(inp::Array{Any,1})
 datas = inp[1]
 num_iters = inp[2]
 thin = inp[3]
-Stats = inp[4]
+stats = inp[4]
 priors = inp[5]
-consts = inp[6]
-    
+consts = inp[6];
+ CP=inp[7]   
     #const (D, N) = size(datas)
     #const pc_max_ind=int(1e4)
 
     
     #load("define_types.jl")
-    require("Julia_code_support.jl")
-    require("gibbs_crp.jl")
-    require("split-merge.jl")
+    require(string(CP,"/Julia_code_support.jl"))
+    require(string(CP,"/gibbs_crp.jl"))
+    require(string(CP,"/split-merge.jl"))
       
    
     
@@ -44,10 +44,10 @@ consts = inp[6]
         yyT[:,:,i]=datas[:,i]*datas[:,i]'
     end
 
-    Stats.means[:,1] = datas[:,1]
-    Stats.sum_squares[:,:,1] = yyT[:,:,1]
+    stats.means[:,1] = datas[:,1]
+    stats.sum_squares[:,:,1] = yyT[:,:,1]
     
-    Stats[1] = getlik(consts,priors,Stats[1],datas[:,1],1,false,true)
+    stats[1] = getlik(consts,priors,stats[1],datas[:,1],1,false,true)
      
     tic()
     totaltime=0
@@ -59,12 +59,12 @@ consts = inp[6]
         p_under_prior_alone = p_for_1(consts,priors,N,datas,p_under_prior_alone)
         
     # if iter==1 || mod(iter,10)==0
-        (class_id,K_plus,Stats,counts) = crp_gibbs(datas,iter,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
+        (class_id,K_plus,stats,counts) = crp_gibbs(datas,iter,class_id,consts,N,priors,yyT,stats,counts,K_plus,alpha,p_under_prior_alone)
     # end
         
           # run split-merge bit
      #   if iter<(num_iters/10)
-        (class_id,K_plus,Stats,counts) = split_merge(datas,class_id,consts,N,priors,yyT,Stats,counts,K_plus,alpha,p_under_prior_alone)
+        (class_id,K_plus,stats,counts) = split_merge(datas,class_id,consts,N,priors,yyT,stats,counts,K_plus,alpha,p_under_prior_alone)
        # end
          
         # update alpha
@@ -73,7 +73,7 @@ consts = inp[6]
 
         # update prior
 
-        (priors.k_0,priors.mu_0) = update_prior(consts,K_plus,Stats,counts,priors)
+        (priors.k_0,priors.mu_0) = update_prior(consts,K_plus,stats,counts,priors)
         
         # save parameter values
         

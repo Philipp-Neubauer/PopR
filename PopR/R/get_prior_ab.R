@@ -31,8 +31,7 @@ s_recursive <- function(n,k,s_rec) {
     }
 }
 snk=abs(snk)
-  
-  # KL distance
+
   KL_dist <- function(par,others){
     
     a <-par[1]

@@ -25,15 +25,12 @@ Maintainer: Philipp Neubauer <neubauer.phil@gmail.com>
 
 }
 \references{
-TBA
+P. Neubauer, J.S. Shima and S.E. Swearer - Inferring dispersal and migrations from incomplete geochemical baselines: analysis of population structure using Bayesian infinite mixture models. DOI: 10.1111/2041-210X.12076
+
+\url{http://onlinelibrary.wiley.com/doi/10.1111/2041-210X.12076/abstract}
 }
-~~ Optionally other standard keywords, one per line, from file KEYWORDS in the R documentation ~~
-~~ directory ~~
+
 \keyword{ package }
 \seealso{
 \code{\link{elink.call}},\code{\link{as.phylogg}},\code{\link{DPM.call}},\code{\link{MM.call}}
-~~ \code{\link[<pkg>:<pkg>-package]{<pkg>}} ~~
-}
-\examples{
-~~ simple examples of the most important functions ~~
 }

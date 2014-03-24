@@ -2,18 +2,18 @@
 \alias{elink.call}
 %- Also NEED an '\alias' for EACH other topic documented here.
 \title{
-Calls Julia to use the exact linkage algorithm on a matrix of class memberships as produced by iterative estiamtion of mixtures
+Call exact linkage algorithm on a matrix of class memberships
 }
 \description{
-%%  ~~ A concise (1-5 lines) description of what the function does. ~~
+Calls Julia to use the exact linkage algorithm on a matrix of class memberships as produced by iterative estiamtion of mixtures
 }
 \usage{
-elink.call(class.ids, path.to.julia = getwd(), elink_path = getwd())
+elink.call(class.ids, path.to.julia = getwd(), elink_path = system.file("exec", package = "PopR"))
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
   \item{class.ids}{
-A matrix of class memberships as produced by iterative estiamtion of mixtures, where columns are MCMC samples and rows are mixed sample individuals. Can be the $class_ids field of the output produced by \code{\link{call_DPM}}
+A matrix of class memberships as produced by iterative estiamtion of mixtures, where columns are MCMC samples and rows are mixed sample individuals. Can be the $class_ids field of the output produced by \code{\link{DPM.call}}
 }
   \item{path.to.julia}{
 provides the path to the julia executable - defaults to the working directory
@@ -22,29 +22,22 @@ provides the path to the julia executable - defaults to the working directory
 provides the path to the julia source script - defaults to the exec directory in the package root of PopR
 }
 }
-\details{
-%%  ~~ If necessary, more details than the description above ~~
-}
+
 \value{
 A canonical representation of the tree, as produced used by matlabs tree plotting functions. Can be transformed into a phylo type object using \code{\link{as.phylogg}}
 }
 \references{
-%% ~put references to the literature/web site here ~
+P. Neubauer, J.S. Shima and S.E. Swearer - Inferring dispersal and migrations from incomplete geochemical baselines: analysis of population structure using Bayesian infinite mixture models. DOI: 10.1111/2041-210X.12076
+
+\url{http://onlinelibrary.wiley.com/doi/10.1111/2041-210X.12076/abstract}
 }
 \author{
 Philipp Neubauer
 }
-\note{
-%%  ~~further notes~~
-}
+
 
 %% ~Make other sections like Warning with \section{Warning }{....} ~
 
 \seealso{
 \code{\link{as.phylogg}},\code{\link{DPM.call}},\code{\link{MM.call}}
 }
-
-% Add one or more standard keywords, see file 'KEYWORDS' in the
-% R documentation directory.
-\keyword{ ~kwd1 }
-\keyword{ ~kwd2 }% __ONLY ONE__ keyword per line

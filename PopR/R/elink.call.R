@@ -1,7 +1,7 @@
 elink.call <-
 function(class.ids,path.to.julia=getwd(),elink_path=system.file("exec",package = "PopR")){
 
- write.csv(file='class_ids.csv',class.ids)
+ write.matrix(file='class_ids.csv',class.ids,sep=',')
 
   if (.Platform$OS.type == "unix")
     {

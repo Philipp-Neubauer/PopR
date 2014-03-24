@@ -115,8 +115,7 @@ end
 wd=(ARGS[1])
 cd(wd)
 
-S = readdlm("class_ids.csv",",",Float64)
-S=int(S[2:end,2:end])
+S = int(readdlm("class_ids.csv",',')[2:end,:])
 
 #elink(S[1:5,1:1])
 Z=elink(S)
