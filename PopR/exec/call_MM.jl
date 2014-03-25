@@ -10,7 +10,7 @@ cd(ARGS[5])
 
 cps = ARGS[6]
 
-CP = ARwritedlm("CP.csv",{cps})
+CP = writedlm("CP.csv",{cps})
 
 @everywhere CP=readdlm("CP.csv")
 
