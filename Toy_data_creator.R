@@ -347,7 +347,7 @@ mean(apply(predict(baselda,mixed)$posterior,1,which.max)==mixedlabels)
 # compare against mixture models
 
 # conditional analysis
-cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia=ptj,v.0= v.0,lambda.0=lamda.0)
+cond.output =MM.call(datas=mixed,conditional=T,iters=num.iters,thin=1,np=np,baseline=baseline,labels=baselabels,path.to.julia=ptj,v.0= v.0,lambda.0=lambda.0)
 
 cond.class.id = as.data.frame(cond.output$class_id)
 cc.fix=cond.class.id[,keeps]
@@ -366,7 +366,7 @@ plot.phylo(reorder(Zp, order = "c")
 
 
 # unconditional analysis
-uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=thin,np=np,baseline=baseline,labels=baselabels,path.to.julia='/home/philbobsqp/Work/julia',v.0=v.0,lambda.0=lambda.0)
+uncond.output =MM.call(datas=mixed,conditional=F,iters=num.iters,thin=1,np=np,baseline=baseline,labels=baselabels,path.to.julia=ptj,v.0=v.0,lambda.0=lambda.0)
 
 ucond.class.id = as.data.frame(uncond.output$class_id)
 uc.fix=ucond.class.id[,keeps]
@@ -382,3 +382,4 @@ plot.phylo(reorder(Zp, order = "c")
            ,edge.color=c(rep(1,length(Zp$edge.length)-1),0)
            ,tip.color=c(1:num.sources,mixedlabels,0)
            ,type='f')
+
