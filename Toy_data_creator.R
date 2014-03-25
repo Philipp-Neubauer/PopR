@@ -314,7 +314,7 @@ plot.phylo(reorder(Zp, order = "c"),edge.color=c(rep(1,length(Zp$edge.length)-1)
 Pc = get_Pc(which(mixedlabels==5)+4,which(mixedlabels==6)+4,Zp)
 
 # Pc with a source
-Pc = get_Pc(1,which(mixedlabels==1)+4,Zp)
+Pc = get_Pc(1,which(mixedlabels==2)+4,Zp)
 
 
 # add circle at average co-assignment
@@ -322,9 +322,13 @@ symbols(0,0,circles=Pc,col=colors()[30],inches=F,add=T,lwd=2)
 
 hc = hclust(dist(data))
 hcp = as.phylo(hc)
-hcp$tip.label=rep('o',N)
+tip.lable <- rep('o',dim(data)[1])
+tip.lable[bix] <- 'X'
 
-plot.phylo(reorder(hcp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1)),tip.color=c(1:num.sources,mixedlabels),type='f')
+hcp$tip.label <- tip.lable
+tip.colour <- label
+
+plot.phylo(reorder(hcp, order = "c"),edge.width=1.5,cex=1.5,edge.color=c(rep(1,length(Zp$edge.length)-1)),tip.color=label,type='f')
 
 pdf('fix simulation.pdf',width=5, height=5)
 par(mar=c(5,4,2,1)+0.1)
