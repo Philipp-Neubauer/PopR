@@ -49,7 +49,7 @@ probas=Array(Float,(size(datas,2),consts.sources))
 #@everywhere load("define_types.jl")
 
 
-    outs = MM_sampler(numiters,thin,condi,Stats,priors,consts)
+    outs = MM_sampler(numiters,thin,condi,stats,priors,consts)
  
 
 # get outputs

@@ -1,4 +1,4 @@
-function  MM_sampler(num_iters,thin,cond,Stats,priors,consts)
+function  MM_sampler(num_iters,thin,cond,stats,priors,consts)
 
     
     
