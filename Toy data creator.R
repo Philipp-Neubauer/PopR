@@ -5,7 +5,7 @@
 require(PopR)
 
 # set path for the julia executable 
-ptj = '/usr/local/Cellar/julia/HEAD/bin'
+ptj = "/Applications/Julia-0.2.1.app/Contents/Resources/julia/bin"
 
 # set color palette to colorblind friendly colors
 cbPalette = c("#000000", "#E69F00", "#56B4E9", "#009E73", "#FF796B","#999999", "#F0E442", "#0072B2", "#D55E00")
@@ -139,7 +139,7 @@ plot.phylo(reorder(Zp, order = "c"),edge.width=2,cex=1.5,edge.color=c(rep(1,leng
 #dev.off()
 
 hc = hclust(dist(data.DPM))
-hcp = as.phylo(hc)
+hcp = as.phylo(hc,n)
 hcp$tip.label=rep('o',n)
 
 pdf('hardest PCAPD Poisprior example.pdf',width=12, height=3)
